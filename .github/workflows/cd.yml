@@ -7,6 +7,7 @@ on:
     paths:
       - 'admin-frontend/**'
       - '.github/workflows/cd.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
