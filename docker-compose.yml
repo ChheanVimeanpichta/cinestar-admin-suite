@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  admin-frontend:
+    build: ./admin-frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:5000
+  admin-backend:
+    build: ./admin-backend
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: ${POSTGRES_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}

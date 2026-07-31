@@ -1,0 +1,5 @@
+replicaCount: 1
+frontend:
+  image: cinestar-admin-frontend
+backend:
+  image: cinestar-admin-backend
