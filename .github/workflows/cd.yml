@@ -103,4 +103,4 @@ jobs:
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendSticker" \
             -d chat_id="${{ secrets.TELEGRAM_TO }}" \
-            -d sticker="CAACAgUAAxkBAAERnjhqaKaq1MAUePutHWKxn2tJqkJcwwACnR0AAmJaIFfm9Eeebau1Vj0E"
+            -d sticker="CAACAgQAAxkBAALITGpte8kzVpjy-Ig4cwtVstDf7_aSAAKiCwACq7LpU0lmBn_52qa_PQQ"
