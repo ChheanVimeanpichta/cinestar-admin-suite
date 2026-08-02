@@ -1,6 +1,14 @@
-import { api } from './api';
+import { Screening, Theater } from "../types";
+import { apiGet } from "./api";
 
-export const getShowtimes = async () => {
-  const { data } = await api.get('/showtimes');
-  return data;
-};
+export function fetchScreeningsForMovie(movieId: string): Promise<Screening[]> {
+  return apiGet<Screening[]>(`/movies/${movieId}/screenings`);
+}
+
+export function fetchAllScreenings(): Promise<Screening[]> {
+  return apiGet<Screening[]>("/screenings");
+}
+
+export function fetchTheaters(): Promise<Theater[]> {
+  return apiGet<Theater[]>("/theaters");
+}

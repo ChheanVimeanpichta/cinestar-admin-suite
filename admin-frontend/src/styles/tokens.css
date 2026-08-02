@@ -1,0 +1,43 @@
+/* CineStar Global Design Tokens */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;900&family=Inter:wght@400;500&family=JetBrains+Mono:wght@500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-accent: #e50914;
+  --color-surface: #121317;
+  --color-surface-variant: #343439;
+  --color-on-surface: #e3e2e8;
+  --color-on-surface-variant: #adb6c4;
+  --radius-round-four: 8px;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Reusable glassmorphism surface, used by navbars & selection cards */
+.glass-surface {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(52, 52, 57, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-round-four);
+}
+
+.text-display-lg {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 64px;
+  text-transform: uppercase;
+}
+
+.text-headline-md {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+}

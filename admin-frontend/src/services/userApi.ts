@@ -1,6 +1,13 @@
-import { api } from './api';
+import { apiGet, apiPost } from "./api";
+import { UserProfile } from "../types";
 
-export const getUsers = async () => {
-  const { data } = await api.get('/users');
-  return data;
-};
+export function getUsers(): Promise<UserProfile[]> {
+  return apiGet<UserProfile[]>("/users");
+}
+
+export function updateUserPermissions(
+  userId: string,
+  permissions: Partial<UserProfile>
+): Promise<UserProfile> {
+  return apiPost<UserProfile>(`/users/${userId}`, permissions);
+}
