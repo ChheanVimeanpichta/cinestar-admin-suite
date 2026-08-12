@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { Users2 } from "lucide-react";
 import { UserProfile } from "../../types";
 import { fetchAllUsers } from "../../services/api";
 import Card from "../../components/shared/Card";
-import SectionHeader from "../../components/shared/SectionHeader";
 import Badge from "../../components/shared/Badge";
 
 export default function Users() {
@@ -14,7 +14,17 @@ export default function Users() {
 
   return (
     <div>
-      <SectionHeader title="Users" subtitle="Manage platform accounts" />
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
+            <Users2 size={30} className="text-accent" />
+            Users
+          </h1>
+          <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
+            Manage platform accounts
+          </p>
+        </div>
+      </div>
       <div className="grid gap-3">
         {users.map((u) => (
           <Card key={u.id} className="flex items-center justify-between">

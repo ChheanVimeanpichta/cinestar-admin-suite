@@ -19,7 +19,7 @@ export interface WeeklySalesPoint {
 export interface TrendingMovie {
   id: string;
   title: string;
-  posterUrl: string;
+  poster: string;
   format: string;
   occupancyPct: number;
   revenue: string;
@@ -56,9 +56,9 @@ const weeklySales: WeeklySalesPoint[] = [
 
 const trendingMovies: TrendingMovie[] = [
   {
-    id: 'mv-neon-dusk',
-    title: 'Neon Dusk',
-    posterUrl: 'https://picsum.photos/seed/neon-dusk/120/180',
+    id: 'avenger',
+    title: 'Avengers: Endgame',
+    poster: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWWatxhrUO2mPie7B5xc-V8DXxsGe9a4CFhAfBIvbJPA&s=10',
     format: 'IMAX',
     occupancyPct: 92,
     revenue: '$24,380',
@@ -66,9 +66,9 @@ const trendingMovies: TrendingMovie[] = [
     positive: true,
   },
   {
-    id: 'mv-starlight',
-    title: 'Starlight Heist',
-    posterUrl: 'https://picsum.photos/seed/starlight-heist/120/180',
+    id: 'fairy-secret',
+    title: 'The Fairy Secret',
+    poster: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdLMFblwS4y1QbzHFKs9g150scJslcAsSxTcdJMwid4w&s=10',
     format: '4DX',
     occupancyPct: 84,
     revenue: '$19,740',
@@ -76,9 +76,9 @@ const trendingMovies: TrendingMovie[] = [
     positive: true,
   },
   {
-    id: 'mv-quiet-harbor',
-    title: 'Quiet Harbor',
-    posterUrl: 'https://picsum.photos/seed/quiet-harbor/120/180',
+    id: 'jurrasic-echoes',
+    title: 'Jurrasic Echoes',
+    poster: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXVj1jwI4fGAbXd6dOf3emm0PzHhQj9-ZK6nv13pb5dQ&s=10',
     format: '2D',
     occupancyPct: 67,
     revenue: '$12,150',
@@ -86,9 +86,9 @@ const trendingMovies: TrendingMovie[] = [
     positive: false,
   },
   {
-    id: 'mv-clockwork',
-    title: 'Clockwork Crown',
-    posterUrl: 'https://picsum.photos/seed/clockwork-crown/120/180',
+    id: 'princes',
+    title: 'The 12 dancing princesses',
+    poster: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtWdSsPc3Lf9zMSAufsmKPEQ-aAiFwWyIVXNghzTx5UA&s=10',
     format: 'DOLBY',
     occupancyPct: 71,
     revenue: '$14,920',
@@ -145,7 +145,21 @@ const liveFeed: FeedEntry[] = [
   },
 ];
 
+export interface InventoryStats {
+  liveScreens: number;
+  avgOccupancyPct: number;
+  nextShowTime: string;
+}
+
+const inventoryStats: InventoryStats = {
+  liveScreens: 8,
+  avgOccupancyPct: 64,
+  nextShowTime: '14:30',
+};
+
 export const getDashboardStats = async (): Promise<DashboardStats> => stats;
+
+export const getInventoryStatsData = async (): Promise<InventoryStats> => inventoryStats;
 
 export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => weeklySales;
 

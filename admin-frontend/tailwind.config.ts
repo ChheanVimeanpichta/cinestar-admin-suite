@@ -6,11 +6,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: "#121317",       // Deep Charcoal - base background
-        "surface-variant": "#343439", // Steel Grey - cards/panels
-        accent: "#e50914",        // Electric Crimson - primary actions
-        onSurface: "#e3e2e8",     // Cool White - primary text
-        onSurfaceVariant: "#adb6c4", // Muted Blue-Grey - secondary text
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        "surface-variant": "rgb(var(--color-surface-variant) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        onSurface: "rgb(var(--color-onSurface) / <alpha-value>)",
+        onSurfaceVariant: "rgb(var(--color-onSurfaceVariant) / <alpha-value>)",
       },
       fontFamily: {
         heading: ["Montserrat", "sans-serif"],

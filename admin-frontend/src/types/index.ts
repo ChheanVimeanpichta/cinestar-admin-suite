@@ -5,13 +5,15 @@ export type ScreeningFormat = "IMAX" | "4DX" | "STANDARD" | "DOLBY" | "2D";
 export interface Movie {
   id: string;
   title: string;
-  posterUrl: string;
-  bannerUrl?: string;
+  poster: string;
+  genre: string;
+  score: number | null;
   synopsis: string;
-  genre: string[];
-  durationMins: number;
-  rating: string; // e.g. PG-13
-  releaseDate: string;
+  badge?: string;
+  hasBookBtn?: boolean;
+  durationMins?: number;
+  releaseDate?: string;
+  bannerUrl?: string;
 }
 
 export interface Theater {
@@ -68,4 +70,30 @@ export interface DashboardStats {
   revenueChangePct: number;
   activeBookings: number;
   theaterOccupancyPct: number;
+}
+
+export type VenueStatus = "Active" | "Maintenance";
+
+export interface TheaterVenue {
+  id: string;
+  name: string;
+  address: string;
+  imageUrl: string;
+  status: VenueStatus;
+  hallCount: number;
+  capacity: number;
+}
+
+export type HallScreenType = "IMAX" | "4DX" | "STANDARD" | "DOLBY" | "2D";
+export type HallStatus = "Active" | "Maintenance";
+
+export interface TheaterHall {
+  id: string;
+  venueId: string;
+  name: string;
+  screenType: HallScreenType;
+  soundSystem: string;
+  capacity: number;
+  seatMapThumbUrl?: string;
+  status: HallStatus;
 }

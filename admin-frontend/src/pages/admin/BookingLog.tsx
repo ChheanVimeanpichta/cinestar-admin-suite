@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
+import { ClipboardList } from "lucide-react";
 import { Booking } from "../../types";
 import { fetchAllBookings } from "../../services/bookingApi";
 import Badge from "../../components/shared/Badge";
-import SectionHeader from "../../components/shared/SectionHeader";
 
 export default function BookingLog() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -13,7 +13,17 @@ export default function BookingLog() {
 
   return (
     <div>
-      <SectionHeader title="Booking Log" subtitle="All customer bookings" />
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
+            <ClipboardList size={30} className="text-accent" />
+            Booking Log
+          </h1>
+          <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
+            All customer bookings
+          </p>
+        </div>
+      </div>
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="text-onSurfaceVariant font-mono text-label-mono border-b border-white/10">

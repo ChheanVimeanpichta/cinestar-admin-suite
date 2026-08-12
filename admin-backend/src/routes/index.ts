@@ -3,6 +3,7 @@ import authRoutes from './authRoutes.js';
 import bookingRoutes from './bookingRoutes.js';
 import dashboardRoutes from './dashboardRoutes.js';
 import movieRoutes from './movieRoutes.js';
+import screeningRoutes from './screeningRoutes.js';
 import showtimeRoutes from './showtimeRoutes.js';
 import theaterRoutes from './theaterRoutes.js';
 import userRoutes from './userRoutes.js';
@@ -13,6 +14,7 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/movies', movieRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/showtimes', showtimeRoutes);
+router.use('/screenings', screeningRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/users', userRoutes);
 

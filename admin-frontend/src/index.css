@@ -7,6 +7,12 @@
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: #05070b;
   color: #f5f7fa;
+
+  --color-surface: 18 19 23;
+  --color-surface-variant: 52 52 57;
+  --color-accent: 229 9 20;
+  --color-onSurface: 227 226 232;
+  --color-onSurfaceVariant: 173 182 196;
 }
 
 body {

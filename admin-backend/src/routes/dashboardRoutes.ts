@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getDashboardSummary,
+  getInventoryStats,
   getLiveFeed,
   getStats,
   getTrendingMovies,
@@ -13,5 +14,6 @@ router.get('/weekly-sales', getWeeklySales);
 router.get('/trending-movies', getTrendingMovies);
 router.get('/live-feed', getLiveFeed);
 router.get('/summary', getDashboardSummary);
+router.get('/inventory-stats', getInventoryStats);
 
 export default router;

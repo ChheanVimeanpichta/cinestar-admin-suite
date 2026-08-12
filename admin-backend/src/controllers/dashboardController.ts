@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import {
   getDashboardStats,
+  getInventoryStatsData,
   getWeeklySales as getWeeklySalesData,
   getTrendingMovies as getTrendingMoviesData,
   getLiveFeed as getLiveFeedData,
@@ -24,6 +25,11 @@ export const getTrendingMovies = async (_req: Request, res: Response) => {
 export const getLiveFeed = async (_req: Request, res: Response) => {
   const feed = await getLiveFeedData();
   res.json(feed);
+};
+
+export const getInventoryStats = async (_req: Request, res: Response) => {
+  const stats = await getInventoryStatsData();
+  res.json(stats);
 };
 
 export const getDashboardSummary = (_req: Request, res: Response) => {

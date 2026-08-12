@@ -1,27 +1,61 @@
-import { Search, Bell, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Search, Bell, Settings, Menu, X } from "lucide-react";
 
-export default function AdminTopBar() {
+interface AdminTopBarProps {
+  onMenuClick?: () => void;
+}
+
+export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [value, setValue] = useState(searchParams.get("q") || "");
+
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    setValue(q);
+  }, [searchParams]);
+
+  const handleSearch = (v: string) => {
+    setValue(v);
+    if (v) {
+      setSearchParams({ q: v });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between px-8 py-5 border-b border-white/10">
-      <div className="flex items-center gap-4">
-        <h1 className="font-heading font-bold text-lg text-accent tracking-wide">DASHBOARD</h1>
-        <span className="text-onSurfaceVariant text-body-md">|</span>
-        <span className="font-mono text-label-mono text-onSurfaceVariant">
-          SYSTEM_STATUS: <span className="text-green-400">OPERATIONAL</span>
-        </span>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative">
+    <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 border-b border-white/10">
+      <div className="flex items-center gap-3 md:gap-4 flex-1">
+        <button
+          onClick={() => onMenuClick?.()}
+          className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface lg:hidden"
+        >
+          <Menu size={18} />
+        </button>
+        <div className="relative flex-1 max-w-xl">
           <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant"
           />
           <input
+            value={value}
+            onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search data..."
-            className="bg-white/5 border border-white/10 rounded pl-9 pr-4 py-2 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none w-64"
+            className="w-full bg-white/5 border border-white/10 rounded pl-9 pr-9 py-2 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
           />
+          {value && (
+            <button
+              onClick={() => handleSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-onSurfaceVariant hover:text-onSurface"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 md:gap-4">
 
         <button className="relative w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
           <Bell size={16} />

@@ -15,6 +15,7 @@ import MovieManagement from "../pages/admin/MovieManagement";
 import ShowtimeManager from "../pages/admin/ShowtimeManager";
 import BookingLog from "../pages/admin/BookingLog";
 import Users from "../pages/admin/Users";
+import Theaters from "../pages/admin/Theaters";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: "showtimes", element: <ShowtimeManager /> },
       { path: "bookings", element: <BookingLog /> },
       { path: "users", element: <Users /> },
+      { path: "theaters", element: <Theaters /> },
     ],
   },
 ]);

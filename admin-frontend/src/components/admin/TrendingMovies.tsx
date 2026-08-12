@@ -1,7 +1,7 @@
 export interface TrendingMovie {
   id: string;
   title: string;
-  posterUrl: string;
+  poster: string;
   format: string;
   occupancyPct: number;
   revenue: string;
@@ -28,7 +28,7 @@ export default function TrendingMovies({ movies, aiInsight }: TrendingMoviesProp
         {movies.map((m) => (
           <div key={m.id} className="flex items-center gap-3">
             <img
-              src={m.posterUrl}
+              src={m.poster}
               alt={m.title}
               className="w-10 h-14 object-cover rounded"
             />

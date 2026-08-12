@@ -6,6 +6,7 @@ import {
   Clock,
   ClipboardList,
   Users as UsersIcon,
+  Building2,
   LogOut,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ const links = [
   { label: "Showtime Manager", to: "/admin/showtimes", icon: <Clock size={16} /> },
   { label: "Booking Log", to: "/admin/bookings", icon: <ClipboardList size={16} /> },
   { label: "Users", to: "/admin/users", icon: <UsersIcon size={16} /> },
+  { label: "Theaters", to: "/admin/theaters", icon: <Building2 size={16} /> },
 ];
 
 export default function AdminSidebar() {

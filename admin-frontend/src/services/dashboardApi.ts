@@ -23,3 +23,11 @@ export async function fetchLiveFeed(): Promise<FeedEntry[]> {
     return mockLiveFeed;
   }
 }
+
+export function fetchInventoryStats(): Promise<{
+  liveScreens: number;
+  avgOccupancyPct: number;
+  nextShowTime: string;
+}> {
+  return apiGet("/dashboard/inventory-stats");
+}

@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { createShowtime, listShowtimes } from '../controllers/showtimeController.js';
+import { createShowtime, listShowtimes, getStats } from '../controllers/showtimeController.js';
 
 const router = Router();
+router.get('/stats', getStats);
 router.get('/', listShowtimes);
 router.post('/', createShowtime);
 

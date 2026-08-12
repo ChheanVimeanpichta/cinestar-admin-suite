@@ -20,11 +20,11 @@ export default function NowShowing() {
       {featured && (
         <section
           className="relative h-[70vh] flex items-end p-12 bg-cover bg-center"
-          style={{ backgroundImage: `url(${featured.bannerUrl})` }}
+          style={{ backgroundImage: `url(${featured.bannerUrl || featured.poster})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/60 to-transparent" />
           <div className="relative z-10 max-w-2xl">
-            <Badge label={featured.rating} tone="accent" />
+            <Badge label={featured.badge || ''} tone="accent" />
             <h1 className="text-display-lg font-heading text-onSurface mt-4">{featured.title}</h1>
             <p className="text-body-lg text-onSurfaceVariant mt-4">{featured.synopsis}</p>
             <Link to={`/movies/${featured.id}`}>
@@ -44,12 +44,12 @@ export default function NowShowing() {
               to={`/movies/${movie.id}`}
               className="group rounded overflow-hidden bg-surface-variant hover:scale-[1.02] transition-transform"
             >
-              <img src={movie.posterUrl} alt={movie.title} className="w-full aspect-[2/3] object-cover" />
+              <img src={movie.poster} alt={movie.title} className="w-full aspect-[2/3] object-cover" />
               <div className="p-4">
                 <h3 className="font-heading font-semibold text-onSurface group-hover:text-accent transition-colors">
                   {movie.title}
                 </h3>
-                <p className="text-onSurfaceVariant text-sm mt-1">{movie.genre.join(", ")}</p>
+                <p className="text-onSurfaceVariant text-sm mt-1">{movie.genre}</p>
               </div>
             </Link>
           ))}

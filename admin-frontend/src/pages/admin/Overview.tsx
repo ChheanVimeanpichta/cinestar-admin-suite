@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Wallet, Ticket, Armchair } from "lucide-react";
+import { Wallet, Ticket, Armchair, LayoutGrid } from "lucide-react";
 import { DashboardStats } from "../../types";
 import {
   fetchDashboardStats,
@@ -34,6 +34,19 @@ export default function Overview() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Page header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
+            <LayoutGrid size={30} className="text-accent" />
+            Dashboard
+          </h1>
+          <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
+            Monitor revenue, occupancy, and system activity across all venues in real time.
+          </p>
+        </div>
+      </div>
+
       {/* Stat cards row */}
       <div className="grid grid-cols-3 gap-6">
         <StatCard
