@@ -614,3 +614,191 @@ export const updateUser = async (
   Object.assign(user, patch);
   return user;
 };
+
+export interface BookingLogStats {
+  totalSalesToday: string;
+  activeBookings: number;
+  pendingValidation: number;
+}
+
+export interface BookingLedgerEntry {
+  id: string;
+  customerName: string;
+  customerInitials: string;
+  movieTitle: string;
+  screeningDate: string;
+  screeningTime: string;
+  seats: string[];
+}
+
+export interface SecurityStreamEvent {
+  id: string;
+  timeAgo: string;
+  message: string;
+  highlight?: string;
+  tone: "alert" | "neutral" | "warning";
+}
+
+const bookingLogStats: BookingLogStats = {
+  totalSalesToday: "$14,280.50",
+  activeBookings: 342,
+  pendingValidation: 18,
+};
+
+const bookingLedger: BookingLedgerEntry[] = [
+  {
+    id: "#CS-9921-X",
+    customerName: "Sophia Laurent",
+    customerInitials: "SL",
+    movieTitle: "Avengers: Endgame",
+    screeningDate: "Oct 24, 2023",
+    screeningTime: "21:00",
+    seats: ["H-12", "H-13"],
+  },
+  {
+    id: "#CS-9920-R",
+    customerName: "Marcus Chen",
+    customerInitials: "MC",
+    movieTitle: "The Fairy Secret",
+    screeningDate: "Oct 24, 2023",
+    screeningTime: "19:15",
+    seats: ["D-05"],
+  },
+  {
+    id: "#CS-9919-Q",
+    customerName: "Elena Rodriguez",
+    customerInitials: "ER",
+    movieTitle: "Jurrasic Echoes",
+    screeningDate: "Oct 23, 2023",
+    screeningTime: "16:45",
+    seats: ["F-08", "F-09"],
+  },
+  {
+    id: "#CS-9918-P",
+    customerName: "James O'Brien",
+    customerInitials: "JO",
+    movieTitle: "SPIDER-MAN: INTO THE SPIDER-VERSE 2",
+    screeningDate: "Oct 23, 2023",
+    screeningTime: "18:30",
+    seats: ["A-01", "A-02", "A-03"],
+  },
+];
+
+const securityEvents: SecurityStreamEvent[] = [
+  {
+    id: "sec-1",
+    timeAgo: "2 mins ago",
+    message: "Suspicious login attempt blocked for user j.doe@email.com",
+    highlight: "blocked",
+    tone: "alert",
+  },
+  {
+    id: "sec-2",
+    timeAgo: "12 mins ago",
+    message: "Booking #CS-9921 payment verified via ABA gateway",
+    highlight: "verified",
+    tone: "neutral",
+  },
+  {
+    id: "sec-3",
+    timeAgo: "28 mins ago",
+    message: "Multiple failed auth attempts from IP 192.168.4.22 \u2014 rate limit engaged",
+    highlight: "rate limit engaged",
+    tone: "warning",
+  },
+  {
+    id: "sec-4",
+    timeAgo: "46 mins ago",
+    message: "Admin user channa.tech performed batch seat release",
+    highlight: "batch seat release",
+    tone: "neutral",
+  },
+  {
+    id: "sec-5",
+    timeAgo: "1 hr ago",
+    message: "SSL certificate renewed for *.cinestar.io \u2014 no downtime detected",
+    highlight: "no downtime",
+    tone: "neutral",
+  },
+];
+
+export const getBookingLogStats = async (): Promise<BookingLogStats> => bookingLogStats;
+export const getBookingLedger = async (): Promise<BookingLedgerEntry[]> => bookingLedger;
+export const getSecurityStream = async (): Promise<SecurityStreamEvent[]> => securityEvents;
+
+export interface AdminUserRecord {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  initials: string;
+  role: "Admin" | "Staff" | "Customer";
+  status: "Active" | "Suspended";
+  joinDate: string;
+  bookingCount: number;
+}
+
+export interface GrowthMetricPoint {
+  day: string;
+  value: number;
+}
+
+interface AdminUserParams {
+  role: string;
+  status: string;
+  search: string;
+  page: number;
+}
+
+const adminUsers: AdminUserRecord[] = [
+  { id: "u-1", name: "Sophia Laurent", email: "s.laurent@cinestar.io", initials: "SL", role: "Admin", status: "Active", joinDate: "Oct 12, 2022", bookingCount: 48 },
+  { id: "u-2", name: "Marcus Chen", email: "m.chen@cinestar.io", initials: "MC", role: "Staff", status: "Active", joinDate: "Mar 03, 2023", bookingCount: 22 },
+  { id: "u-3", name: "Elena Rodriguez", email: "e.rodriguez@gmail.com", initials: "ER", role: "Customer", status: "Active", joinDate: "Jan 18, 2024", bookingCount: 12 },
+  { id: "u-4", name: "James O'Brien", email: "j.obrien@gmail.com", initials: "JO", role: "Customer", status: "Suspended", joinDate: "Jun 05, 2023", bookingCount: 5 },
+  { id: "u-5", name: "Aiko Tanaka", email: "a.tanaka@cinestar.io", initials: "AT", role: "Staff", status: "Active", joinDate: "Sep 20, 2023", bookingCount: 31 },
+  { id: "u-6", name: "David Park", email: "d.park@gmail.com", initials: "DP", role: "Customer", status: "Active", joinDate: "Feb 14, 2024", bookingCount: 8 },
+  { id: "u-7", name: "Maria Silva", email: "m.silva@gmail.com", initials: "MS", role: "Customer", status: "Active", joinDate: "Apr 02, 2023", bookingCount: 15 },
+  { id: "u-8", name: "Robert Kim", email: "r.kim@cinestar.io", initials: "RK", role: "Admin", status: "Active", joinDate: "Jul 10, 2022", bookingCount: 56 },
+  { id: "u-9", name: "Lisa Andersson", email: "l.andersson@gmail.com", initials: "LA", role: "Customer", status: "Suspended", joinDate: "Nov 30, 2023", bookingCount: 3 },
+  { id: "u-10", name: "Tom Becker", email: "t.becker@cinestar.io", initials: "TB", role: "Staff", status: "Active", joinDate: "May 15, 2023", bookingCount: 27 },
+];
+
+const growthMetrics: GrowthMetricPoint[] = [
+  { day: "Mon", value: 120 },
+  { day: "Tue", value: 185 },
+  { day: "Wed", value: 210 },
+  { day: "Thu", value: 260 },
+  { day: "Fri", value: 340 },
+  { day: "Sat", value: 400 },
+  { day: "Sun", value: 480 },
+];
+
+export const getAdminUserRecords = async (params: AdminUserParams): Promise<AdminUserRecord[]> => {
+  let result = [...adminUsers];
+
+  if (params.role !== "All") {
+    result = result.filter((u) => u.role === params.role);
+  }
+  if (params.status !== "All") {
+    result = result.filter((u) => u.status === params.status);
+  }
+  if (params.search) {
+    const q = params.search.toLowerCase();
+    result = result.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.id.toLowerCase().includes(q)
+    );
+  }
+
+  const PAGE_SIZE = 5;
+  const start = (params.page - 1) * PAGE_SIZE;
+  return result.slice(start, start + PAGE_SIZE);
+};
+
+export const getUserManagementStats = async (): Promise<{ totalUsers: number }> => ({
+  totalUsers: adminUsers.length,
+});
+
+export const getGrowthMetricsData = async (): Promise<GrowthMetricPoint[]> => growthMetrics;

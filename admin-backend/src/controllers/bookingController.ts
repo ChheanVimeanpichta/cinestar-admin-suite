@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import {
   getBookingById,
+  getBookingLedger as getLedgerData,
+  getBookingLogStats as getLogStatsData,
   getBookings,
   getMyBookings,
 } from '../services/mockDataService.js';
@@ -20,4 +22,12 @@ export const getBookingDetails = async (req: Request, res: Response) => {
     return;
   }
   res.json(booking);
+};
+
+export const getBookingLogStats = async (_req: Request, res: Response) => {
+  res.json(await getLogStatsData());
+};
+
+export const getBookingLedger = async (_req: Request, res: Response) => {
+  res.json(await getLedgerData());
 };

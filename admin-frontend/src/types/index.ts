@@ -97,3 +97,43 @@ export interface TheaterHall {
   seatMapThumbUrl?: string;
   status: HallStatus;
 }
+
+export interface BookingLedgerEntry {
+  id: string;
+  customerName: string;
+  customerInitials: string;
+  movieTitle: string;
+  screeningDate: string;
+  screeningTime: string;
+  seats: string[];
+}
+
+export type SecurityEventTone = "alert" | "neutral" | "warning";
+
+export interface SecurityStreamEvent {
+  id: string;
+  timeAgo: string;
+  message: string;
+  highlight?: string;
+  tone: SecurityEventTone;
+}
+
+export type UserRole = "Admin" | "Staff" | "Customer";
+export type UserAccountStatus = "Active" | "Suspended";
+
+export interface AdminUserRecord {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  initials: string;
+  role: UserRole;
+  status: UserAccountStatus;
+  joinDate: string;
+  bookingCount: number;
+}
+
+export interface GrowthMetricPoint {
+  day: string;
+  value: number;
+}
