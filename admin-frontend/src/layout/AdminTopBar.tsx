@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Search, Bell, Settings, Menu, X } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Search, Bell, Settings, Menu, X, LogOut } from "lucide-react";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 interface AdminTopBarProps {
   onMenuClick?: () => void;
@@ -9,6 +10,8 @@ interface AdminTopBarProps {
 export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [value, setValue] = useState(searchParams.get("q") || "");
+  const { admin, logout } = useAdminAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const q = searchParams.get("q") || "";
@@ -56,7 +59,6 @@ export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-
         <button className="relative w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
           <Bell size={16} />
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-accent rounded-full" />
@@ -65,6 +67,25 @@ export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
         <button className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
           <Settings size={16} />
         </button>
+
+        <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/10">
+          <span className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase">
+            {admin?.name?.slice(0, 2) ?? "AD"}
+          </span>
+          <span className="text-body-md text-onSurfaceVariant max-w-[140px] truncate">
+            {admin?.name ?? "Admin"}
+          </span>
+          <button
+            onClick={() => {
+              logout();
+              navigate("/login", { replace: true });
+            }}
+            title="Sign out"
+            className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-accent hover:bg-accent/10 transition"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

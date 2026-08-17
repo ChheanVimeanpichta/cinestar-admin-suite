@@ -1,15 +1,16 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Loader2, Lock, Mail } from "lucide-react";
+import { Loader2, Lock, Mail, User } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
 
 const inputClass =
   "w-full bg-white/5 border border-white/10 rounded pl-10 pr-4 py-2.5 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors";
 
-export const Login = () => {
-  const { isAuthenticated, isLoading, login } = useAdminAuth();
+export const Register = () => {
+  const { isAuthenticated, isLoading, register } = useAdminAuth();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -24,23 +25,37 @@ export const Login = () => {
     setError("");
     setSubmitting(true);
     try {
-      await login(email, password);
+      await register(name, email, password);
       navigate("/admin", { replace: true });
     } catch {
-      setError("Invalid email or password. Please try again.");
+      setError("Registration failed. The email may already be in use.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AuthLayout title="Sign In" subtitle="Access the Cinestar admin dashboard.">
+    <AuthLayout title="Create Account" subtitle="Sign up to manage Cinestar venues.">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {error && (
           <p className="rounded bg-accent/10 border border-accent/30 text-accent text-sm px-4 py-3">
             {error}
           </p>
         )}
+
+        <div className="relative">
+          <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant" />
+          <input
+            type="text"
+            required
+            minLength={2}
+            autoComplete="name"
+            placeholder="Full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={inputClass}
+          />
+        </div>
 
         <div className="relative">
           <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant" />
@@ -60,8 +75,9 @@ export const Login = () => {
           <input
             type="password"
             required
-            autoComplete="current-password"
-            placeholder="Password"
+            minLength={6}
+            autoComplete="new-password"
+            placeholder="Password (min 6 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={inputClass}
@@ -74,18 +90,18 @@ export const Login = () => {
           className="flex items-center justify-center gap-2 py-3 rounded bg-accent text-onSurface text-sm font-body font-semibold hover:brightness-110 transition disabled:opacity-60 mt-2"
         >
           {submitting && <Loader2 size={16} className="animate-spin" />}
-          {submitting ? "Signing in..." : "Sign In"}
+          {submitting ? "Creating account..." : "Create Account"}
         </button>
       </form>
 
       <p className="text-onSurfaceVariant text-body-md mt-6 text-center">
-        No account yet?{" "}
-        <Link to="/register" className="text-accent hover:underline font-semibold">
-          Create one
+        Already have an account?{" "}
+        <Link to="/login" className="text-accent hover:underline font-semibold">
+          Sign in
         </Link>
       </p>
     </AuthLayout>
   );
 };
 
-export default Login;
+export default Register;

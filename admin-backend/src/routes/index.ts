@@ -8,16 +8,17 @@ import securityRoutes from './securityRoutes.js';
 import showtimeRoutes from './showtimeRoutes.js';
 import theaterRoutes from './theaterRoutes.js';
 import userRoutes from './userRoutes.js';
+import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
 const router = Router();
 router.use('/auth', authRoutes);
-router.use('/dashboard', dashboardRoutes);
-router.use('/movies', movieRoutes);
-router.use('/theaters', theaterRoutes);
-router.use('/showtimes', showtimeRoutes);
-router.use('/screenings', screeningRoutes);
-router.use('/bookings', bookingRoutes);
-router.use('/security', securityRoutes);
-router.use('/users', userRoutes);
+router.use('/dashboard', adminAuthMiddleware, dashboardRoutes);
+router.use('/movies', adminAuthMiddleware, movieRoutes);
+router.use('/theaters', adminAuthMiddleware, theaterRoutes);
+router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
+router.use('/screenings', adminAuthMiddleware, screeningRoutes);
+router.use('/bookings', adminAuthMiddleware, bookingRoutes);
+router.use('/security', adminAuthMiddleware, securityRoutes);
+router.use('/users', adminAuthMiddleware, userRoutes);
 
 export default router;

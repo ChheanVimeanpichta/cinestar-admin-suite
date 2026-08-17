@@ -137,3 +137,16 @@ export interface GrowthMetricPoint {
   day: string;
   value: number;
 }
+
+export interface AdminAccount {
+  id: string;
+  email: string;
+  name: string;
+  role: "admin";
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  admin: AdminAccount;
+}

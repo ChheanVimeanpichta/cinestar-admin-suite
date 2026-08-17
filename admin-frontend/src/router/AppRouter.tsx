@@ -1,14 +1,9 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import MainLayout from "../layout/MainLayout";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import { ReactNode } from "react";
 import AdminLayout from "../layout/AdminLayout";
-
-import NowShowing from "../pages/user/NowShowing";
-import MovieDetails from "../pages/user/MovieDetails";
-import SelectScreening from "../pages/user/SelectScreening";
-import SeatPicker from "../pages/user/SeatPicker";
-import Payment from "../pages/user/Payment";
-import Profile from "../pages/user/Profile";
-import BookingHistory from "../pages/user/BookingHistory";
+import Login from "../pages/Login";
+import Register from "../pages/Register";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 import Overview from "../pages/admin/Overview";
 import MovieManagement from "../pages/admin/MovieManagement";
@@ -17,23 +12,41 @@ import BookingLog from "../pages/admin/BookingLog";
 import Users from "../pages/admin/Users";
 import Theaters from "../pages/admin/Theaters";
 
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAdminAuth();
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-surface text-onSurfaceVariant font-mono text-sm uppercase tracking-widest">
+        Loading...
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <MainLayout />,
-    children: [
-      { index: true, element: <NowShowing /> },
-      { path: "movies/:movieId", element: <MovieDetails /> },
-      { path: "movies/:movieId/screening", element: <SelectScreening /> },
-      { path: "booking/:screeningId/seats", element: <SeatPicker /> },
-      { path: "booking/:screeningId/payment", element: <Payment /> },
-      { path: "profile", element: <Profile /> },
-      { path: "profile/history", element: <BookingHistory /> },
-    ],
+    element: <Navigate to="/admin" replace />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
   },
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: (
+      <ProtectedRoute>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Overview /> },
       { path: "movies", element: <MovieManagement /> },
