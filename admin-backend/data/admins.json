@@ -24,19 +24,27 @@
     "createdAt": "2026-08-24T03:51:53.341Z"
   },
   {
-    "id": "adm-1787553319472-617",
-    "email": "tinkerbell@gmail.com",
-    "name": "Tinkerbell",
-    "password": "123456",
-    "role": "staff",
-    "createdAt": "2026-08-24T06:35:19.472Z"
-  },
-  {
     "id": "adm-1787554801950-728",
     "email": "john@gmail.com",
     "name": "Jonh",
     "password": "123456",
     "role": "staff",
     "createdAt": "2026-08-24T07:00:01.950Z"
+  },
+  {
+    "id": "adm-1787660996912-396",
+    "email": "so@gmail.com",
+    "name": "So",
+    "password": "123123",
+    "role": "staff",
+    "createdAt": "2026-08-25T12:29:56.912Z"
+  },
+  {
+    "id": "adm-1787661123795-825",
+    "email": "chea@gmail.com",
+    "name": "chea",
+    "password": "123123",
+    "role": "staff",
+    "createdAt": "2026-08-25T12:32:03.795Z"
   }
 ]
