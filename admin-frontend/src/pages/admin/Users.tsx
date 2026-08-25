@@ -177,7 +177,7 @@ export default function Users() {
               className="flex items-center justify-center gap-2 py-3 rounded bg-accent/80 text-onSurface text-sm font-body font-semibold hover:brightness-110 transition"
             >
               <UserPlus size={15} />
-              New User
+              New Staff
             </button>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import AuthLayout from "../components/auth/AuthLayout";
@@ -87,13 +87,6 @@ export const Login = () => {
         <p>Email: <span className="font-mono text-accent">admin@gmail.com</span></p>
         <p>Password: <span className="font-mono text-accent">cinestar123</span></p>
       </div>
-
-      <p className="text-onSurfaceVariant text-body-md mt-4 text-center">
-        No account yet?{" "}
-        <Link to="/register" className="text-accent hover:underline font-semibold">
-          Create one
-        </Link>
-      </p>
     </AuthLayout>
   );
 };
