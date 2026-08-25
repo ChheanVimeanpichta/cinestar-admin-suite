@@ -10,7 +10,8 @@ import { signAdminToken } from '../utils/jwt.js';
 export const loginAdmin = async (req: Request, res: Response) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid email or password format' });
+    const message = parsed.error.issues[0]?.message || 'Invalid email or password format';
+    res.status(400).json({ message });
     return;
   }
 
@@ -28,7 +29,8 @@ export const loginAdmin = async (req: Request, res: Response) => {
 export const registerAdmin = async (req: Request, res: Response) => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Invalid registration data' });
+    const message = parsed.error.issues[0]?.message || 'Invalid registration data';
+    res.status(400).json({ message });
     return;
   }
 

@@ -4,6 +4,7 @@ declare global {
       admin?: {
         id: string;
         email: string;
+        role?: 'admin' | 'staff';
       };
     }
   }

@@ -142,7 +142,7 @@ export interface AdminAccount {
   id: string;
   email: string;
   name: string;
-  role: "admin";
+  role: "admin" | "staff";
   createdAt: string;
 }
 

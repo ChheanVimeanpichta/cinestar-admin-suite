@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   admin-frontend:
     build: ./admin-frontend
@@ -6,11 +5,19 @@ services:
       - "3000:80"
     environment:
       VITE_API_BASE_URL: http://localhost:5000
+    depends_on:
+      - admin-backend
+    restart: always
+
   admin-backend:
     build: ./admin-backend
     ports:
       - "5000:5000"
     environment:
-      DATABASE_URL: ${POSTGRES_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-mysql://admin:password@database-2.co2sxxgtd0y5.us-east-1.rds.amazonaws.com:3306/cinestar?connect_timeout=15}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-123}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-dev-secret-key-123}
+    restart: always
+
+

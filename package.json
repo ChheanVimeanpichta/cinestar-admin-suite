@@ -1,0 +1,17 @@
+{
+  "name": "cinestar-admin-suite",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm --prefix admin-backend run dev",
+    "dev:frontend": "npm --prefix admin-frontend run dev",
+    "build:backend": "npm --prefix admin-backend run build",
+    "build:frontend": "npm --prefix admin-frontend run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "test": "npm --prefix admin-backend test"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

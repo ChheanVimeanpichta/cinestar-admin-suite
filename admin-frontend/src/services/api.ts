@@ -1,25 +1,112 @@
 // Base API client — central place to configure fetch/axios instance & shared endpoints
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const RAW_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const BASE_URL = RAW_URL.replace(/\/+$/, "");
+
+function buildUrl(path: string): string {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${BASE_URL}${cleanPath}`;
+}
 
 function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("cinestar_admin_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json();
+    if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
+      return data.message;
+    }
+  } catch {
+    // Non-JSON response (e.g. 404/502 HTML from proxy)
+    if (res.status === 404) {
+      return "Endpoint not found (404). Please ensure the backend server is running.";
+    }
+    if (res.status === 502 || res.status === 503) {
+      return "Backend service unavailable. Please check if the backend is running.";
+    }
+  }
+  return fallback;
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path), { headers: authHeaders() });
+  } catch {
+    throw new Error(
+      "Unable to connect to the backend server. Please verify the admin backend is running."
+    );
+  }
+
+  if (!res.ok) {
+    const errorMessage = await extractErrorMessage(res, `GET ${path} failed with status ${res.status}`);
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error(`POST ${path} failed: ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the backend server. Please verify the admin backend is running."
+    );
+  }
+
+  if (!res.ok) {
+    const errorMessage = await extractErrorMessage(res, `POST ${path} failed with status ${res.status}`);
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the backend server. Please verify the admin backend is running."
+    );
+  }
+
+  if (!res.ok) {
+    const errorMessage = await extractErrorMessage(res, `PUT ${path} failed with status ${res.status}`);
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path), {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  } catch {
+    throw new Error(
+      "Unable to connect to the backend server. Please verify the admin backend is running."
+    );
+  }
+
+  if (!res.ok) {
+    const errorMessage = await extractErrorMessage(res, `DELETE ${path} failed with status ${res.status}`);
+    throw new Error(errorMessage);
+  }
   return res.json();
 }
 
@@ -35,75 +122,62 @@ export function fetchAllUsers(): Promise<UserProfile[]> {
 }
 
 export function fetchUserManagementStats(): Promise<{ totalUsers: number }> {
-  return apiGet<{ totalUsers: number }>("/users/stats").catch(() => ({ totalUsers: 2485 }));
+  return apiGet<{ totalUsers: number }>("/users/stats").catch(() => ({ totalUsers: 0 }));
 }
 
 export function fetchUserGrowthMetrics(): Promise<GrowthMetricPoint[]> {
-  return apiGet<GrowthMetricPoint[]>("/users/growth-metrics").catch(() => mockGrowthMetrics);
+  return apiGet<GrowthMetricPoint[]>("/users/growth-metrics").catch(() => []);
 }
 
-interface FetchUsersParams {
+export interface FetchUsersParams {
   role: UserRole | "All";
   status: UserAccountStatus | "All";
   search: string;
   page: number;
 }
 
-export function fetchUsers(params: FetchUsersParams): Promise<AdminUserRecord[]> {
+export interface FetchUsersResponse {
+  records: AdminUserRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export async function fetchUsers(params: FetchUsersParams): Promise<FetchUsersResponse> {
   const query = new URLSearchParams({
     role: params.role,
     status: params.status,
     search: params.search,
     page: String(params.page),
   });
-  return apiGet<AdminUserRecord[]>(`/users?${query.toString()}`).catch(() =>
-    filterMockUsers(params)
-  );
+  try {
+    const res = await apiGet<any>(`/users?${query.toString()}`);
+    if (Array.isArray(res)) {
+      return {
+        records: res,
+        total: res.length,
+        page: params.page,
+        pageSize: 5,
+        totalPages: Math.max(1, Math.ceil(res.length / 5)),
+      };
+    }
+    return {
+      records: res.records || [],
+      total: typeof res.total === 'number' ? res.total : (res.records?.length || 0),
+      page: typeof res.page === 'number' ? res.page : params.page,
+      pageSize: typeof res.pageSize === 'number' ? res.pageSize : 5,
+      totalPages: typeof res.totalPages === 'number' ? res.totalPages : Math.max(1, Math.ceil((res.total || 0) / 5)),
+    };
+  } catch {
+    return { records: [], total: 0, page: 1, pageSize: 5, totalPages: 1 };
+  }
 }
 
-const mockUsers: AdminUserRecord[] = [
-  { id: "u-1", name: "Sophia Laurent", email: "s.laurent@cinestar.io", initials: "SL", role: "Admin", status: "Active", joinDate: "Oct 12, 2022", bookingCount: 48 },
-  { id: "u-2", name: "Marcus Chen", email: "m.chen@cinestar.io", initials: "MC", role: "Staff", status: "Active", joinDate: "Mar 03, 2023", bookingCount: 22 },
-  { id: "u-3", name: "Elena Rodriguez", email: "e.rodriguez@gmail.com", initials: "ER", role: "Customer", status: "Active", joinDate: "Jan 18, 2024", bookingCount: 12 },
-  { id: "u-4", name: "James O'Brien", email: "j.obrien@gmail.com", initials: "JO", role: "Customer", status: "Suspended", joinDate: "Jun 05, 2023", bookingCount: 5 },
-  { id: "u-5", name: "Aiko Tanaka", email: "a.tanaka@cinestar.io", initials: "AT", role: "Staff", status: "Active", joinDate: "Sep 20, 2023", bookingCount: 31 },
-  { id: "u-6", name: "David Park", email: "d.park@gmail.com", initials: "DP", role: "Customer", status: "Active", joinDate: "Feb 14, 2024", bookingCount: 8 },
-  { id: "u-7", name: "Maria Silva", email: "m.silva@gmail.com", initials: "MS", role: "Customer", status: "Active", joinDate: "Apr 02, 2023", bookingCount: 15 },
-  { id: "u-8", name: "Robert Kim", email: "r.kim@cinestar.io", initials: "RK", role: "Admin", status: "Active", joinDate: "Jul 10, 2022", bookingCount: 56 },
-  { id: "u-9", name: "Lisa Andersson", email: "l.andersson@gmail.com", initials: "LA", role: "Customer", status: "Suspended", joinDate: "Nov 30, 2023", bookingCount: 3 },
-  { id: "u-10", name: "Tom Becker", email: "t.becker@cinestar.io", initials: "TB", role: "Staff", status: "Active", joinDate: "May 15, 2023", bookingCount: 27 },
-];
+export function updateAdminUser(id: string, data: { name: string; email: string }): Promise<AdminUserRecord> {
+  return apiPut<AdminUserRecord>(`/users/${id}`, data);
+}
 
-const mockGrowthMetrics: GrowthMetricPoint[] = [
-  { day: "Mon", value: 120 },
-  { day: "Tue", value: 185 },
-  { day: "Wed", value: 210 },
-  { day: "Thu", value: 260 },
-  { day: "Fri", value: 340 },
-  { day: "Sat", value: 400 },
-  { day: "Sun", value: 480 },
-];
-
-function filterMockUsers(params: FetchUsersParams): AdminUserRecord[] {
-  let result = [...mockUsers];
-
-  if (params.role !== "All") {
-    result = result.filter((u) => u.role === params.role);
-  }
-  if (params.status !== "All") {
-    result = result.filter((u) => u.status === params.status);
-  }
-  if (params.search) {
-    const q = params.search.toLowerCase();
-    result = result.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.id.toLowerCase().includes(q)
-    );
-  }
-
-  const PAGE_SIZE = 5;
-  const start = (params.page - 1) * PAGE_SIZE;
-  return result.slice(start, start + PAGE_SIZE);
+export function deleteAdminUser(id: string): Promise<{ success: boolean; message: string }> {
+  return apiDelete<{ success: boolean; message: string }>(`/users/${id}`);
 }

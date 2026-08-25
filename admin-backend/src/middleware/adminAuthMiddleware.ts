@@ -14,11 +14,15 @@ export const adminAuthMiddleware = (req: Request, res: Response, next: NextFunct
       role?: string;
       email?: string;
     };
-    if (!payload.sub || payload.role !== 'admin') {
+    if (!payload.sub || (payload.role !== 'admin' && payload.role !== 'staff')) {
       res.status(401).json({ message: 'Invalid token' });
       return;
     }
-    req.admin = { id: payload.sub, email: payload.email ?? '' };
+    req.admin = {
+      id: payload.sub,
+      email: payload.email ?? '',
+      role: (payload.role as 'admin' | 'staff') || 'staff',
+    };
     next();
   } catch {
     res.status(401).json({ message: 'Invalid or expired token' });

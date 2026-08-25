@@ -15,7 +15,7 @@ export const mockLiveFeed: FeedEntry[] = [
     timestamp: "12:43:05",
     action: "SHOWTIME_MODIFIED",
     targetEntity: "Neon Dusk (Hall 1)",
-    userName: "System Admin",
+    userName: "Admin",
     userInitials: "SA",
     status: "updated",
   },

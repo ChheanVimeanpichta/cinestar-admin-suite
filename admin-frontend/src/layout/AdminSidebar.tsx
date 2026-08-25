@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   PlusCircle,
   LayoutGrid,
@@ -9,6 +9,7 @@ import {
   Building2,
   LogOut,
 } from "lucide-react";
+import { useAdminAuth } from "../context/AdminAuthContext";
 
 const links = [
   { label: "Overview", to: "/admin", icon: <LayoutGrid size={16} /> },
@@ -20,6 +21,9 @@ const links = [
 ];
 
 export default function AdminSidebar() {
+  const { admin, logout } = useAdminAuth();
+  const navigate = useNavigate();
+
   return (
     <aside className="w-64 bg-surface border-r border-white/10 flex flex-col p-6">
       <div className="flex items-center gap-2 mb-8">
@@ -59,16 +63,30 @@ export default function AdminSidebar() {
 
       {/* Admin profile footer */}
       <div className="flex items-center gap-3 pt-4 border-t border-white/10">
-        <img
-          src="/admin-avatar.png"
-          alt="Admin"
-          className="w-9 h-9 rounded-full object-cover"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-onSurface text-sm font-body font-medium truncate">Admin Profile</p>
-          <p className="text-onSurfaceVariant text-xs truncate">admin@cinestar.io</p>
+        <div className="w-9 h-9 rounded-full bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase shrink-0">
+          {admin?.name?.slice(0, 2) ?? "AD"}
         </div>
-        <button className="text-onSurfaceVariant hover:text-accent transition">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-onSurface text-sm font-body font-medium truncate">{admin?.name ?? "Admin"}</p>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${
+              admin?.email?.toLowerCase() === "admin@gmail.com"
+                ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+            }`}>
+              {admin?.email?.toLowerCase() === "admin@gmail.com" ? "admin" : "staff"}
+            </span>
+          </div>
+          <p className="text-onSurfaceVariant text-xs truncate">{admin?.email ?? "admin@gmail.com"}</p>
+        </div>
+        <button
+          onClick={() => {
+            logout();
+            navigate("/login", { replace: true });
+          }}
+          title="Sign out"
+          className="text-onSurfaceVariant hover:text-accent transition"
+        >
           <LogOut size={16} />
         </button>
       </div>

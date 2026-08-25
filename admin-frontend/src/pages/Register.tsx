@@ -27,8 +27,12 @@ export const Register = () => {
     try {
       await register(name, email, password);
       navigate("/admin", { replace: true });
-    } catch {
-      setError("Registration failed. The email may already be in use.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }

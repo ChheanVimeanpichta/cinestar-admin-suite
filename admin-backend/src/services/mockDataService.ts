@@ -1,7 +1,5 @@
-// Mock data service for movies/theaters/screenings/bookings/users.
-// NOTE: The backend has no DB tables for these entities yet, so the endpoints
-// serve representative seed data matching the admin frontend contracts. Swap
-// these functions for real Prisma queries once the models exist.
+import { getAllAdmins } from './authService.js';
+import { getAllCustomers } from './customerService.js';
 
 export interface Movie {
   id: string;
@@ -344,8 +342,8 @@ const bookings: Booking[] = [
 const users: UserProfile[] = [
   {
     id: 'usr-admin',
-    name: 'System Admin',
-    email: 'admin@cinestar.com',
+    name: 'Admin',
+    email: 'admin@gmail.com',
     avatarUrl: 'https://picsum.photos/seed/admin/100/100',
     role: 'admin',
   },
@@ -750,41 +748,93 @@ interface AdminUserParams {
   page: number;
 }
 
-const adminUsers: AdminUserRecord[] = [
-  { id: "u-1", name: "Sophia Laurent", email: "s.laurent@cinestar.io", initials: "SL", role: "Admin", status: "Active", joinDate: "Oct 12, 2022", bookingCount: 48 },
-  { id: "u-2", name: "Marcus Chen", email: "m.chen@cinestar.io", initials: "MC", role: "Staff", status: "Active", joinDate: "Mar 03, 2023", bookingCount: 22 },
-  { id: "u-3", name: "Elena Rodriguez", email: "e.rodriguez@gmail.com", initials: "ER", role: "Customer", status: "Active", joinDate: "Jan 18, 2024", bookingCount: 12 },
-  { id: "u-4", name: "James O'Brien", email: "j.obrien@gmail.com", initials: "JO", role: "Customer", status: "Suspended", joinDate: "Jun 05, 2023", bookingCount: 5 },
-  { id: "u-5", name: "Aiko Tanaka", email: "a.tanaka@cinestar.io", initials: "AT", role: "Staff", status: "Active", joinDate: "Sep 20, 2023", bookingCount: 31 },
-  { id: "u-6", name: "David Park", email: "d.park@gmail.com", initials: "DP", role: "Customer", status: "Active", joinDate: "Feb 14, 2024", bookingCount: 8 },
-  { id: "u-7", name: "Maria Silva", email: "m.silva@gmail.com", initials: "MS", role: "Customer", status: "Active", joinDate: "Apr 02, 2023", bookingCount: 15 },
-  { id: "u-8", name: "Robert Kim", email: "r.kim@cinestar.io", initials: "RK", role: "Admin", status: "Active", joinDate: "Jul 10, 2022", bookingCount: 56 },
-  { id: "u-9", name: "Lisa Andersson", email: "l.andersson@gmail.com", initials: "LA", role: "Customer", status: "Suspended", joinDate: "Nov 30, 2023", bookingCount: 3 },
-  { id: "u-10", name: "Tom Becker", email: "t.becker@cinestar.io", initials: "TB", role: "Staff", status: "Active", joinDate: "May 15, 2023", bookingCount: 27 },
-];
-
 const growthMetrics: GrowthMetricPoint[] = [
-  { day: "Mon", value: 120 },
-  { day: "Tue", value: 185 },
-  { day: "Wed", value: 210 },
-  { day: "Thu", value: 260 },
-  { day: "Fri", value: 340 },
-  { day: "Sat", value: 400 },
-  { day: "Sun", value: 480 },
+  { day: "Mon", value: 10 },
+  { day: "Tue", value: 18 },
+  { day: "Wed", value: 25 },
+  { day: "Thu", value: 32 },
+  { day: "Fri", value: 45 },
+  { day: "Sat", value: 60 },
+  { day: "Sun", value: 80 },
 ];
 
-export const getAdminUserRecords = async (params: AdminUserParams): Promise<AdminUserRecord[]> => {
-  let result = [...adminUsers];
+export interface PaginatedAdminUserRecords {
+  records: AdminUserRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
-  if (params.role !== "All") {
-    result = result.filter((u) => u.role === params.role);
+export const getAdminUserRecordsPaginated = async (
+  params: AdminUserParams
+): Promise<PaginatedAdminUserRecords> => {
+  const realAdmins = getAllAdmins();
+  const realCustomers = getAllCustomers();
+
+  const adminRecords: AdminUserRecord[] = realAdmins.map((adm) => {
+    const initials =
+      adm.name
+        .split(' ')
+        .filter(Boolean)
+        .map((p) => p[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase() || 'AD';
+    const dateObj = new Date(adm.createdAt);
+    const joinDate = isNaN(dateObj.getTime())
+      ? 'Recent'
+      : dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    const userRole: 'Admin' | 'Staff' =
+      adm.email.toLowerCase() === 'admin@gmail.com' ? 'Admin' : 'Staff';
+
+    return {
+      id: adm.id,
+      name: adm.name,
+      email: adm.email,
+      initials,
+      role: userRole,
+      status: 'Active',
+      joinDate,
+      bookingCount: 0,
+    };
+  });
+
+  const customerRecords: AdminUserRecord[] = realCustomers.map((cust) => {
+    const initials =
+      cust.name
+        .split(' ')
+        .filter(Boolean)
+        .map((p) => p[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase() || 'CU';
+
+    return {
+      id: cust.id,
+      name: cust.name,
+      email: cust.email,
+      avatarUrl: cust.avatarUrl,
+      initials,
+      role: 'Customer',
+      status: cust.status || 'Active',
+      joinDate: cust.joinDate || 'Recent',
+      bookingCount: cust.bookingCount || 0,
+    };
+  });
+
+  const allRecords = [...adminRecords, ...customerRecords];
+  let filtered = [...allRecords];
+
+  if (params.role !== 'All') {
+    filtered = filtered.filter((u) => u.role.toLowerCase() === params.role.toLowerCase());
   }
-  if (params.status !== "All") {
-    result = result.filter((u) => u.status === params.status);
+  if (params.status !== 'All') {
+    filtered = filtered.filter((u) => u.status.toLowerCase() === params.status.toLowerCase());
   }
   if (params.search) {
     const q = params.search.toLowerCase();
-    result = result.filter(
+    filtered = filtered.filter(
       (u) =>
         u.name.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q) ||
@@ -793,12 +843,32 @@ export const getAdminUserRecords = async (params: AdminUserParams): Promise<Admi
   }
 
   const PAGE_SIZE = 5;
-  const start = (params.page - 1) * PAGE_SIZE;
-  return result.slice(start, start + PAGE_SIZE);
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const currentPage = Math.max(1, Math.min(params.page, totalPages));
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const records = filtered.slice(start, start + PAGE_SIZE);
+
+  return {
+    records,
+    total,
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    totalPages,
+  };
 };
 
-export const getUserManagementStats = async (): Promise<{ totalUsers: number }> => ({
-  totalUsers: adminUsers.length,
-});
+export const getAdminUserRecords = async (params: AdminUserParams): Promise<AdminUserRecord[]> => {
+  const paginated = await getAdminUserRecordsPaginated(params);
+  return paginated.records;
+};
+
+export const getUserManagementStats = async (): Promise<{ totalUsers: number }> => {
+  const realAdmins = getAllAdmins();
+  const realCustomers = getAllCustomers();
+  return {
+    totalUsers: realAdmins.length + realCustomers.length,
+  };
+};
 
 export const getGrowthMetricsData = async (): Promise<GrowthMetricPoint[]> => growthMetrics;

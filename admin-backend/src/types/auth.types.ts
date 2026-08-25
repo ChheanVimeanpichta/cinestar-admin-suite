@@ -1,5 +1,5 @@
 export interface AdminAuthPayload {
   id: string;
   email: string;
-  role: 'admin';
+  role: 'admin' | 'staff';
 }

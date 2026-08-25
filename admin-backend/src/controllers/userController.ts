@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import {
   getCurrentUser,
-  getAdminUserRecords,
+  getAdminUserRecordsPaginated,
   getGrowthMetricsData,
   getUserManagementStats,
   getUsers,
   updateUser,
 } from '../services/mockDataService.js';
+import { deleteAdmin, updateAdmin } from '../services/authService.js';
+import { deleteCustomer, updateCustomer } from '../services/customerService.js';
 
 export const listUsers = async (_req: Request, res: Response) => {
   res.json(await getUsers());
@@ -17,7 +19,8 @@ export const getAdminUsers = async (req: Request, res: Response) => {
   const status = String(req.query.status ?? 'All');
   const search = String(req.query.search ?? '');
   const page = parseInt(String(req.query.page ?? '1'), 10) || 1;
-  res.json(await getAdminUserRecords({ role, status, search, page }));
+  const result = await getAdminUserRecordsPaginated({ role, status, search, page });
+  res.json(result);
 };
 
 export const getMe = async (_req: Request, res: Response) => {
@@ -36,6 +39,45 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     return;
   }
   res.json(user);
+};
+
+export const updateUserRecord = async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  const { name, email, status } = req.body ?? {};
+  try {
+    const updated = updateAdmin(id, { name, email });
+    if (updated) {
+      res.json(updated);
+      return;
+    }
+    const updatedCust = updateCustomer(id, { name, email, status });
+    if (updatedCust) {
+      res.json(updatedCust);
+      return;
+    }
+    res.status(404).json({ message: 'User not found' });
+  } catch (err) {
+    if (err instanceof Error && err.message === 'EMAIL_TAKEN') {
+      res.status(409).json({ message: 'Email already in use' });
+      return;
+    }
+    res.status(500).json({ message: 'Failed to update user' });
+  }
+};
+
+export const deleteUserById = async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  const successAdmin = deleteAdmin(id);
+  if (successAdmin) {
+    res.json({ success: true, message: 'User deleted successfully' });
+    return;
+  }
+  const successCust = deleteCustomer(id);
+  if (successCust) {
+    res.json({ success: true, message: 'Customer deleted successfully' });
+    return;
+  }
+  res.status(404).json({ message: 'User not found' });
 };
 
 export const getUserStats = async (_req: Request, res: Response) => {

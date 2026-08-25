@@ -3,13 +3,84 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
+  name      String   @default("Admin")
   password  String
+  role      String   @default("admin")
   createdAt DateTime @default(now())
 }
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  password     String?
+  avatarUrl    String?  @db.LongText
+  role         String   @default("Customer")
+  status       String   @default("Active")
+  joinDate     String?
+  bookingCount Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Movie {
+  id           String      @id @default(cuid())
+  title        String
+  poster       String      @db.Text
+  genre        String
+  score        Float?
+  synopsis     String      @db.Text
+  badge        String?
+  hasBookBtn   Boolean     @default(false)
+  durationMins Int?
+  releaseDate  String?
+  screenings   Screening[]
+  createdAt    DateTime    @default(now())
+}
+
+model Theater {
+  id         String      @id @default(cuid())
+  name       String
+  location   String
+  status     String      @default("Active")
+  screenings Screening[]
+}
+
+model Screening {
+  id        String    @id @default(cuid())
+  movieId   String
+  movie     Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  theaterId String
+  theater   Theater   @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  date      String
+  time      String
+  format    String
+  hall      String
+  price     Float
+  bookings  Booking[]
+}
+
+model Booking {
+  id            String     @id @default(cuid())
+  userId        String
+  customerName  String?
+  movieTitle    String
+  screeningId   String?
+  screening     Screening? @relation(fields: [screeningId], references: [id], onDelete: SetNull)
+  screeningDate String?
+  screeningTime String?
+  seats         String     @default("[]")
+  totalPrice    Float
+  paymentMethod String     @default("ABA")
+  status        String     @default("confirmed")
+  createdAt     DateTime   @default(now())
+}
+
+

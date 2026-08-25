@@ -26,8 +26,12 @@ export const Login = () => {
     try {
       await login(email, password);
       navigate("/admin", { replace: true });
-    } catch {
-      setError("Invalid email or password. Please try again.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -78,7 +82,13 @@ export const Login = () => {
         </button>
       </form>
 
-      <p className="text-onSurfaceVariant text-body-md mt-6 text-center">
+      <div className="mt-4 p-3 rounded bg-white/5 border border-white/10 text-xs text-onSurfaceVariant">
+        <p className="font-medium text-onSurface mb-1">Default Demo Admin:</p>
+        <p>Email: <span className="font-mono text-accent">admin@gmail.com</span></p>
+        <p>Password: <span className="font-mono text-accent">cinestar123</span></p>
+      </div>
+
+      <p className="text-onSurfaceVariant text-body-md mt-4 text-center">
         No account yet?{" "}
         <Link to="/register" className="text-accent hover:underline font-semibold">
           Create one

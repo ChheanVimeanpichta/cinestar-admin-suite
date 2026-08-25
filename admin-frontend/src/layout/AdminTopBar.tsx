@@ -69,11 +69,11 @@ export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
         </button>
 
         <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/10">
-          <span className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase">
+          <span
+            title={admin?.name ?? "Admin"}
+            className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase"
+          >
             {admin?.name?.slice(0, 2) ?? "AD"}
-          </span>
-          <span className="text-body-md text-onSurfaceVariant max-w-[140px] truncate">
-            {admin?.name ?? "Admin"}
           </span>
           <button
             onClick={() => {

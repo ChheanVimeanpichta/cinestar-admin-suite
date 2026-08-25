@@ -8,10 +8,12 @@ import securityRoutes from './securityRoutes.js';
 import showtimeRoutes from './showtimeRoutes.js';
 import theaterRoutes from './theaterRoutes.js';
 import userRoutes from './userRoutes.js';
+import customerRoutes from './customerRoutes.js';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
 const router = Router();
 router.use('/auth', authRoutes);
+router.use('/customers', customerRoutes);
 router.use('/dashboard', adminAuthMiddleware, dashboardRoutes);
 router.use('/movies', adminAuthMiddleware, movieRoutes);
 router.use('/theaters', adminAuthMiddleware, theaterRoutes);

@@ -41,6 +41,26 @@ const router = createBrowserRouter([
     element: <Register />,
   },
   {
+    path: "/users",
+    element: <Navigate to="/admin/users" replace />,
+  },
+  {
+    path: "/movies",
+    element: <Navigate to="/admin/movies" replace />,
+  },
+  {
+    path: "/showtimes",
+    element: <Navigate to="/admin/showtimes" replace />,
+  },
+  {
+    path: "/bookings",
+    element: <Navigate to="/admin/bookings" replace />,
+  },
+  {
+    path: "/theaters",
+    element: <Navigate to="/admin/theaters" replace />,
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>
@@ -55,6 +75,10 @@ const router = createBrowserRouter([
       { path: "users", element: <Users /> },
       { path: "theaters", element: <Theaters /> },
     ],
+  },
+  {
+    path: "*",
+    element: <Navigate to="/admin" replace />,
   },
 ]);
 
