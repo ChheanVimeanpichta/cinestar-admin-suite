@@ -12,6 +12,7 @@ model Admin {
   email     String   @unique
   name      String   @default("Admin")
   password  String
+  avatarUrl String?  @db.LongText
   role      String   @default("admin")
   createdAt DateTime @default(now())
 }

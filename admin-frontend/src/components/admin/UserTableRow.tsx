@@ -45,16 +45,26 @@ export default function UserTableRow({
       <td className="py-3.5 pr-4 pl-6">
         <div className="flex items-center gap-3">
           {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt={user.name} className="w-9 h-9 rounded-full object-cover" />
-          ) : (
-            <span
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-mono font-semibold ${fallbackColor(
-                user.initials
-              )}`}
-            >
-              {user.initials}
-            </span>
-          )}
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <span
+            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-mono font-semibold shrink-0 ${fallbackColor(
+              user.initials
+            )}`}
+            style={{ display: user.avatarUrl ? 'none' : 'flex' }}
+          >
+            {user.initials}
+          </span>
           <div>
             <p className="text-onSurface text-sm font-body font-medium">{user.name}</p>
             <p className="text-onSurfaceVariant text-xs">{user.email}</p>

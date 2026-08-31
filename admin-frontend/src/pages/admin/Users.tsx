@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Search, Download, RefreshCw, UserPlus, X, AlertTriangle } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Search, Download, RefreshCw, UserPlus, X, AlertTriangle, Upload, Camera, Trash2 } from "lucide-react";
 import { AdminUserRecord, GrowthMetricPoint, UserRole, UserAccountStatus } from "../../types";
 import {
   fetchUserManagementStats,
@@ -31,8 +31,10 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<AdminUserRecord | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [editError, setEditError] = useState("");
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Delete User State
   const [deletingUser, setDeletingUser] = useState<AdminUserRecord | null>(null);
@@ -44,8 +46,10 @@ export default function Users() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newAvatarUrl, setNewAvatarUrl] = useState("");
   const [createError, setCreateError] = useState("");
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+  const createFileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = () => {
     fetchUserManagementStats().then((s) => setTotalUsers(s.totalUsers));
@@ -81,10 +85,64 @@ export default function Users() {
     };
   }, [roleFilter, statusFilter, search, page]);
 
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (url: string) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (JPG, PNG, WebP).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setter(compressedDataUrl);
+        } else if (typeof event.target?.result === "string") {
+          setter(event.target.result);
+        }
+      };
+      img.onerror = () => {
+        if (typeof event.target?.result === "string") {
+          setter(event.target.result);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const handleOpenEdit = (user: AdminUserRecord) => {
     setEditingUser(user);
     setEditName(user.name);
     setEditEmail(user.email);
+    setEditAvatarUrl(user.avatarUrl || "");
     setEditError("");
   };
 
@@ -94,7 +152,24 @@ export default function Users() {
     setIsSubmittingEdit(true);
     setEditError("");
     try {
-      await updateAdminUser(editingUser.id, { name: editName, email: editEmail });
+      await updateAdminUser(editingUser.id, {
+        name: editName,
+        email: editEmail,
+        avatarUrl: editAvatarUrl,
+      });
+      // Optimistically update local users list for immediate feedback
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editingUser.id
+            ? {
+                ...u,
+                name: editName,
+                email: editEmail,
+                avatarUrl: editAvatarUrl,
+              }
+            : u
+        )
+      );
       setEditingUser(null);
       loadData();
     } catch (err: any) {
@@ -133,11 +208,13 @@ export default function Users() {
         name: newName,
         email: newEmail,
         password: newPassword,
+        avatarUrl: newAvatarUrl || undefined,
       });
       setIsCreatingUser(false);
       setNewName("");
       setNewEmail("");
       setNewPassword("");
+      setNewAvatarUrl("");
       loadData();
     } catch (err: any) {
       setCreateError(err?.message || "Failed to create user");
@@ -173,6 +250,7 @@ export default function Users() {
               onClick={() => {
                 setIsCreatingUser(true);
                 setCreateError("");
+                setNewAvatarUrl("");
               }}
               className="flex items-center justify-center gap-2 py-3 rounded bg-accent/80 text-onSurface text-sm font-body font-semibold hover:brightness-110 transition"
             >
@@ -324,6 +402,48 @@ export default function Users() {
             )}
 
             <form onSubmit={handleSaveEdit} className="space-y-4">
+              {/* Photo Upload Section */}
+              <div className="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-lg">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  {editAvatarUrl ? (
+                    <img src={editAvatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={22} className="text-onSurfaceVariant" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-onSurface">Profile Photo</p>
+                  <p className="text-[11px] text-onSurfaceVariant mb-2">Upload from PC (JPG, PNG)</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={editFileInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e, setEditAvatarUrl)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => editFileInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded bg-white/10 text-onSurface text-xs font-medium hover:bg-white/20 flex items-center gap-1.5 transition"
+                    >
+                      <Upload size={12} />
+                      {editAvatarUrl ? "Change Photo" : "Upload Photo"}
+                    </button>
+                    {editAvatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setEditAvatarUrl("")}
+                        className="p-1 rounded text-red-400 hover:bg-red-500/10 transition"
+                        title="Remove photo"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wide text-onSurfaceVariant mb-1.5">
                   Full Name
@@ -413,7 +533,7 @@ export default function Users() {
         </div>
       )}
 
-      {/* Create New User Modal */}
+      {/* Create New Staff Modal */}
       {isCreatingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl">
@@ -437,6 +557,48 @@ export default function Users() {
             )}
 
             <form onSubmit={handleSaveCreate} className="space-y-4">
+              {/* Photo Upload Section */}
+              <div className="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-lg">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  {newAvatarUrl ? (
+                    <img src={newAvatarUrl} alt="Staff Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera size={22} className="text-onSurfaceVariant" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-onSurface">Staff Photo (Optional)</p>
+                  <p className="text-[11px] text-onSurfaceVariant mb-2">Upload from PC (JPG, PNG, WebP)</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={createFileInputRef}
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e, setNewAvatarUrl)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => createFileInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded bg-white/10 text-onSurface text-xs font-medium hover:bg-white/20 flex items-center gap-1.5 transition"
+                    >
+                      <Upload size={12} />
+                      {newAvatarUrl ? "Change Photo" : "Upload from PC"}
+                    </button>
+                    {newAvatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setNewAvatarUrl("")}
+                        className="p-1 rounded text-red-400 hover:bg-red-500/10 transition"
+                        title="Remove photo"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wide text-onSurfaceVariant mb-1.5">
                   Full Name

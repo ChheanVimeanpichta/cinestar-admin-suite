@@ -1,14 +1,16 @@
 import request from 'supertest';
 import app from '../src/app.js';
 import { resetAdminsForTest } from '../src/services/authService.js';
+import { prisma } from '../src/config/db.js';
 
 describe('auth endpoints', () => {
-  beforeEach(() => {
-    resetAdminsForTest();
+  beforeEach(async () => {
+    await resetAdminsForTest();
   });
 
-  afterAll(() => {
-    resetAdminsForTest();
+  afterAll(async () => {
+    await resetAdminsForTest();
+    await prisma.$disconnect();
   });
   it('rejects login with missing fields', async () => {
     const res = await request(app).post('/api/auth/login').send({});

@@ -1,10 +1,12 @@
 import 'dotenv/config';
 import express from 'express';
 import routes from './routes/index.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // CORS — the admin frontend runs on a different origin (http://localhost:3000)
 // and fetches this backend directly (http://localhost:5000). Without these
@@ -28,5 +30,7 @@ app.get('/health', (_req, res) => {
 // root (when VITE_API_BASE_URL points straight at this backend).
 app.use('/api', routes);
 app.use(routes);
+
+app.use(errorHandler);
 
 export default app;

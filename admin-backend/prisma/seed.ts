@@ -1,81 +1,99 @@
 import { PrismaClient } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const prisma = new PrismaClient();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 async function main() {
   console.log('🌱 Starting Prisma database seeding for MySQL...');
 
-  const dataDir = path.resolve(__dirname, '../data');
-  const adminsFile = path.join(dataDir, 'admins.json');
-  const customersFile = path.join(dataDir, 'customers.json');
-
   // 1. Seed Admins & Staff
-  if (fs.existsSync(adminsFile)) {
-    const raw = fs.readFileSync(adminsFile, 'utf-8').trim().replace(/^\uFEFF/, '');
-    if (raw) {
-      const admins = JSON.parse(raw);
-      for (const adm of admins) {
-        await prisma.admin.upsert({
-          where: { email: adm.email.toLowerCase() },
-          update: {
-            name: adm.name,
-            password: adm.password,
-            role: adm.role || 'staff',
-          },
-          create: {
-            id: adm.id,
-            email: adm.email.toLowerCase(),
-            name: adm.name,
-            password: adm.password,
-            role: adm.role || 'staff',
-            createdAt: adm.createdAt ? new Date(adm.createdAt) : new Date(),
-          },
-        });
-      }
-      console.log(`✅ Seeded ${admins.length} admins/staff.`);
-    }
-  }
+  const initialAdmins = [
+    {
+      id: 'adm-1',
+      email: 'admin@gmail.com',
+      name: 'Admin',
+      password: 'cinestar123',
+      role: 'admin',
+    },
+    {
+      id: 'adm-staff-1',
+      email: 'blair@gmail.com',
+      name: 'Blair',
+      password: '123456',
+      role: 'staff',
+    },
+    {
+      id: 'adm-staff-2',
+      email: 'tinkerbell@gmail.com',
+      name: 'Tinkerbell',
+      password: '123456',
+      role: 'staff',
+    },
+    {
+      id: 'adm-staff-3',
+      email: 'luke@gmail.com',
+      name: 'Luke',
+      password: '123456',
+      role: 'staff',
+    },
+  ];
 
-  // 2. Seed Customers
-  if (fs.existsSync(customersFile)) {
-    const raw = fs.readFileSync(customersFile, 'utf-8').trim().replace(/^\uFEFF/, '');
-    if (raw) {
-      const customers = JSON.parse(raw);
-      for (const cust of customers) {
-        await prisma.customer.upsert({
-          where: { email: cust.email.toLowerCase() },
-          update: {
-            name: cust.name,
-            phone: cust.phone || null,
-            password: cust.password || null,
-            avatarUrl: cust.avatarUrl || null,
-            status: cust.status || 'Active',
-            joinDate: cust.joinDate || null,
-            bookingCount: cust.bookingCount || 0,
-          },
-          create: {
-            id: cust.id,
-            name: cust.name,
-            email: cust.email.toLowerCase(),
-            phone: cust.phone || null,
-            password: cust.password || null,
-            avatarUrl: cust.avatarUrl || null,
-            role: 'Customer',
-            status: cust.status || 'Active',
-            joinDate: cust.joinDate || null,
-            bookingCount: cust.bookingCount || 0,
-            createdAt: cust.createdAt ? new Date(cust.createdAt) : new Date(),
-          },
-        });
-      }
-      console.log(`✅ Seeded ${customers.length} customers.`);
-    }
+  for (const adm of initialAdmins) {
+    await prisma.admin.upsert({
+      where: { email: adm.email.toLowerCase() },
+      update: {
+        name: adm.name,
+        password: adm.password,
+        role: adm.role,
+      },
+      create: {
+        id: adm.id,
+        email: adm.email.toLowerCase(),
+        name: adm.name,
+        password: adm.password,
+        role: adm.role,
+      },
+    });
   }
+  console.log(`✅ Seeded ${initialAdmins.length} admins/staff.`);
+
+  // 2. Seed Sample Customers
+  const initialCustomers = [
+    {
+      id: 'cust-1',
+      name: 'John Doe',
+      email: 'customer@cinestar.com',
+      phone: '+1234567890',
+      password: 'customer123',
+      role: 'Customer',
+      status: 'Active',
+      bookingCount: 2,
+    },
+  ];
+
+  for (const cust of initialCustomers) {
+    await prisma.customer.upsert({
+      where: { email: cust.email.toLowerCase() },
+      update: {
+        name: cust.name,
+        phone: cust.phone,
+        password: cust.password,
+        status: cust.status,
+        bookingCount: cust.bookingCount,
+      },
+      create: {
+        id: cust.id,
+        name: cust.name,
+        email: cust.email.toLowerCase(),
+        phone: cust.phone,
+        password: cust.password,
+        role: cust.role,
+        status: cust.status,
+        joinDate: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+        bookingCount: cust.bookingCount,
+      },
+    });
+  }
+  console.log(`✅ Seeded ${initialCustomers.length} initial customers.`);
 
   console.log('🎉 Seeding completed successfully!');
 }
@@ -88,4 +106,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

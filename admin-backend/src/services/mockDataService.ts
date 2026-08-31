@@ -769,8 +769,8 @@ export interface PaginatedAdminUserRecords {
 export const getAdminUserRecordsPaginated = async (
   params: AdminUserParams
 ): Promise<PaginatedAdminUserRecords> => {
-  const realAdmins = getAllAdmins();
-  const realCustomers = getAllCustomers();
+  const realAdmins = await getAllAdmins();
+  const realCustomers = await getAllCustomers();
 
   const adminRecords: AdminUserRecord[] = realAdmins.map((adm) => {
     const initials =
@@ -792,6 +792,7 @@ export const getAdminUserRecordsPaginated = async (
       id: adm.id,
       name: adm.name,
       email: adm.email,
+      avatarUrl: adm.avatarUrl,
       initials,
       role: userRole,
       status: 'Active',
@@ -864,11 +865,12 @@ export const getAdminUserRecords = async (params: AdminUserParams): Promise<Admi
 };
 
 export const getUserManagementStats = async (): Promise<{ totalUsers: number }> => {
-  const realAdmins = getAllAdmins();
-  const realCustomers = getAllCustomers();
+  const realAdmins = await getAllAdmins();
+  const realCustomers = await getAllCustomers();
   return {
     totalUsers: realAdmins.length + realCustomers.length,
   };
 };
 
 export const getGrowthMetricsData = async (): Promise<GrowthMetricPoint[]> => growthMetrics;
+

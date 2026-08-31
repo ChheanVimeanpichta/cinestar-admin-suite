@@ -43,14 +43,14 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 
 export const updateUserRecord = async (req: Request, res: Response) => {
   const id = String(req.params.id);
-  const { name, email, status } = req.body ?? {};
+  const { name, email, status, avatarUrl } = req.body ?? {};
   try {
-    const updated = updateAdmin(id, { name, email });
+    const updated = await updateAdmin(id, { name, email, avatarUrl });
     if (updated) {
       res.json(updated);
       return;
     }
-    const updatedCust = updateCustomer(id, { name, email, status });
+    const updatedCust = await updateCustomer(id, { name, email, status, avatarUrl } as any);
     if (updatedCust) {
       res.json(updatedCust);
       return;
@@ -67,12 +67,12 @@ export const updateUserRecord = async (req: Request, res: Response) => {
 
 export const deleteUserById = async (req: Request, res: Response) => {
   const id = String(req.params.id);
-  const successAdmin = deleteAdmin(id);
+  const successAdmin = await deleteAdmin(id);
   if (successAdmin) {
     res.json({ success: true, message: 'User deleted successfully' });
     return;
   }
-  const successCust = deleteCustomer(id);
+  const successCust = await deleteCustomer(id);
   if (successCust) {
     res.json({ success: true, message: 'Customer deleted successfully' });
     return;

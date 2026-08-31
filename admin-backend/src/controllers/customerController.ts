@@ -9,7 +9,8 @@ import {
 } from '../services/customerService.js';
 
 export const listCustomers = async (_req: Request, res: Response) => {
-  res.json(getAllCustomers());
+  const customers = await getAllCustomers();
+  res.json(customers);
 };
 
 export const loginCustomer = async (req: Request, res: Response) => {
@@ -18,7 +19,7 @@ export const loginCustomer = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Email/username and password are required' });
     return;
   }
-  const customer = verifyCustomerCredentials(String(email), String(password));
+  const customer = await verifyCustomerCredentials(String(email), String(password));
   if (!customer) {
     res.status(401).json({ message: 'Invalid credentials' });
     return;
@@ -38,7 +39,7 @@ export const registerCustomer = async (req: Request, res: Response) => {
   }
 
   try {
-    const customer = registerOrUpdateCustomer({
+    const customer = await registerOrUpdateCustomer({
       name: String(name),
       email: String(email),
       password: password ? String(password) : undefined,
@@ -56,7 +57,7 @@ export const registerCustomer = async (req: Request, res: Response) => {
 };
 
 export const getCustomer = async (req: Request, res: Response) => {
-  const customer = findCustomerById(String(req.params.id));
+  const customer = await findCustomerById(String(req.params.id));
   if (!customer) {
     res.status(404).json({ message: 'Customer not found' });
     return;
@@ -65,7 +66,7 @@ export const getCustomer = async (req: Request, res: Response) => {
 };
 
 export const updateCustomerById = async (req: Request, res: Response) => {
-  const updated = updateCustomer(String(req.params.id), req.body ?? {});
+  const updated = await updateCustomer(String(req.params.id), req.body ?? {});
   if (!updated) {
     res.status(404).json({ message: 'Customer not found' });
     return;
@@ -74,7 +75,7 @@ export const updateCustomerById = async (req: Request, res: Response) => {
 };
 
 export const deleteCustomerById = async (req: Request, res: Response) => {
-  const deleted = deleteCustomer(String(req.params.id));
+  const deleted = await deleteCustomer(String(req.params.id));
   if (!deleted) {
     res.status(404).json({ message: 'Customer not found' });
     return;
