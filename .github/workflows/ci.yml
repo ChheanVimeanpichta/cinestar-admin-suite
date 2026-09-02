@@ -31,8 +31,8 @@ jobs:
       - name: Copy Files to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
-          host: 13.212.225.236
-          username: ubuntu
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "admin-backend/."
           target: "~/deploy-admin-api"
@@ -40,8 +40,8 @@ jobs:
       - name: Build and Run with Docker on EC2
         uses: appleboy/ssh-action@v0.1.10
         with:
-          host: 13.212.225.236
-          username: ubuntu
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Install Docker if not installed
