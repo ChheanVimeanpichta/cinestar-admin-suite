@@ -11,9 +11,19 @@ import {
   Trash2,
   X,
   Clapperboard,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { Movie } from "../../types";
-import { fetchAllMovies } from "../../services/movieApi";
+import {
+  fetchAllMovies,
+  createMovie,
+  updateMovie,
+  deleteMovie,
+  bulkDeleteMovies,
+} from "../../services/movieApi";
 import { fetchInventoryStats } from "../../services/dashboardApi";
 import MovieFormModal from "../../components/movies/MovieFormModal";
 import MovieTable from "../../components/movies/MovieTable";
@@ -44,15 +54,69 @@ export default function MovieManagement() {
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchAllMovies()
-      .then(setMovies)
-      .catch(() => setMovies(mockMovies));
+  // Dynamic async states
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-    fetchInventoryStats()
-      .then(setInventoryStats)
-      .catch(() => setInventoryStats(mockInventoryStats));
+  // Delete modal state (styled identically to Users page)
+  const [deletingMovie, setDeletingMovie] = useState<Movie | null>(null);
+  const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  // Bulk delete modal state
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isSubmittingBulkDelete, setIsSubmittingBulkDelete] = useState(false);
+  const [bulkDeleteError, setBulkDeleteError] = useState("");
+
+  const loadMovies = async () => {
+    try {
+      setLoading(true);
+      const [moviesResult, statsResult] = await Promise.allSettled([
+        fetchAllMovies(),
+        fetchInventoryStats(),
+      ]);
+
+      if (moviesResult.status === "fulfilled") {
+        setMovies(moviesResult.value);
+      } else {
+        console.warn("Failed to fetch movies from API, using fallback:", moviesResult.reason);
+        setMovies(mockMovies);
+      }
+
+      if (statsResult.status === "fulfilled") {
+        setInventoryStats(statsResult.value);
+      }
+    } catch (err: any) {
+      console.warn("Failed to fetch movie data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMovies();
+
+    const interval = setInterval(() => {
+      fetchInventoryStats().then(setInventoryStats).catch(() => {});
+    }, 15000);
+
+    const onFocus = () => {
+      fetchInventoryStats().then(setInventoryStats).catch(() => {});
+    };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   const filtered = useMemo(() => {
     return movies.filter((m) => {
@@ -90,13 +154,26 @@ export default function MovieManagement() {
     setPage(1);
   }, [query, filterBadge, filterGenre]);
 
-  const handleSave = (movie: Movie) => {
-    if (editingMovie) {
-      setMovies((prev) => prev.map((m) => (m.id === movie.id ? movie : m)));
-    } else {
-      setMovies((prev) => [movie, ...prev]);
+  const handleSave = async (movieData: Movie) => {
+    try {
+      setIsSaving(true);
+      if (editingMovie) {
+        const updated = await updateMovie(editingMovie.id, movieData);
+        setMovies((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+        setFeedback({ type: "success", message: `Updated "${updated.title}" successfully!` });
+      } else {
+        const created = await createMovie(movieData);
+        setMovies((prev) => [created, ...prev]);
+        setFeedback({ type: "success", message: `Added "${created.title}" to catalog!` });
+      }
+      setEditingMovie(null);
+      setShowModal(false);
+    } catch (err: any) {
+      console.error("Failed to save movie:", err);
+      setFeedback({ type: "error", message: err.message || "Failed to save movie" });
+    } finally {
+      setIsSaving(false);
     }
-    setEditingMovie(null);
   };
 
   const handleEdit = (movie: Movie) => {
@@ -105,8 +182,29 @@ export default function MovieManagement() {
   };
 
   const handleDelete = (movie: Movie) => {
-    if (window.confirm(`Delete "${movie.title}"?`)) {
-      setMovies((prev) => prev.filter((m) => m.id !== movie.id));
+    setDeletingMovie(movie);
+    setDeleteError("");
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingMovie) return;
+    try {
+      setIsSubmittingDelete(true);
+      setDeleteError("");
+      await deleteMovie(deletingMovie.id);
+      setMovies((prev) => prev.filter((m) => m.id !== deletingMovie.id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(deletingMovie.id);
+        return next;
+      });
+      setFeedback({ type: "success", message: `"${deletingMovie.title}" was deleted.` });
+      setDeletingMovie(null);
+    } catch (err: any) {
+      console.error("Failed to delete movie:", err);
+      setDeleteError(err.message || "Failed to delete movie");
+    } finally {
+      setIsSubmittingDelete(false);
     }
   };
 
@@ -143,14 +241,40 @@ export default function MovieManagement() {
     setSelectedIds(new Set());
   }
 
-  function handleBulkDelete() {
-    if (
-      window.confirm(`Delete ${selectedIds.size} selected movie(s)?`)
-    ) {
+  const handleOpenBulkDelete = () => {
+    setShowBulkDeleteModal(true);
+    setBulkDeleteError("");
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    try {
+      setIsSubmittingBulkDelete(true);
+      setBulkDeleteError("");
+      const ids = Array.from(selectedIds);
+      await bulkDeleteMovies(ids);
       setMovies((prev) => prev.filter((m) => !selectedIds.has(m.id)));
+      setSelectedIds(new Set());
+      setFeedback({ type: "success", message: `Successfully deleted ${count} movie(s).` });
+      setShowBulkDeleteModal(false);
+    } catch (err: any) {
+      console.error("Failed to bulk delete movies:", err);
+      setBulkDeleteError(err.message || "Failed to bulk delete movies");
+    } finally {
+      setIsSubmittingBulkDelete(false);
     }
-    setSelectedIds(new Set());
-  }
+  };
+
+  const handleExport = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(movies, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `movies-export-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
 
   const allOnPageSelected =
     paginatedMovies.length > 0 &&
@@ -176,7 +300,19 @@ export default function MovieManagement() {
           </div>
 
           <div className="flex flex-shrink-0 items-center gap-3">
-            <button className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-4 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-surface-variant">
+            <button
+              onClick={loadMovies}
+              disabled={loading}
+              title="Refresh movies from database"
+              className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-accent" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-4 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10"
+            >
               <Download className="h-4 w-4" />
               Export
             </button>
@@ -193,6 +329,29 @@ export default function MovieManagement() {
           </div>
         </div>
 
+        {/* Feedback Alert Toast */}
+        {feedback && (
+          <div
+            className={`mb-4 flex items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm transition-all animate-in fade-in duration-200 ${
+              feedback.type === "success"
+                ? "border border-green-500/30 bg-green-500/10 text-green-300"
+                : "border border-red-500/30 bg-red-500/10 text-red-300"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {feedback.type === "success" ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
+              ) : (
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+              )}
+              <span className="font-medium">{feedback.message}</span>
+            </div>
+            <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-75">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-variant/60 p-3">
           <div className="relative min-w-[260px] flex-1">
@@ -206,6 +365,15 @@ export default function MovieManagement() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => { loadMovies(); }}
+              title="Refresh movie catalog & stats"
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-xs font-medium text-onSurface hover:bg-white/10 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-red-400" : ""}`} />
+              Refresh
+            </button>
             <button
               onClick={() => setShowFilter(!showFilter)}
               className={`flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium transition-colors ${
@@ -324,7 +492,7 @@ export default function MovieManagement() {
               </button>
             )}
             <button
-              onClick={handleBulkDelete}
+              onClick={handleOpenBulkDelete}
               className="flex items-center gap-2 rounded-lg border border-red-700 bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-600/30"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -335,21 +503,28 @@ export default function MovieManagement() {
 
         {/* Table */}
         <div>
-          <MovieTable
-            movies={paginatedMovies}
-            selectedIds={selectedIds}
-            onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            allSelected={allOnPageSelected}
-          />
+          {loading && movies.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-12 rounded-xl border border-white/10 bg-surface-variant/40">
+              <RefreshCw className="h-8 w-8 animate-spin text-accent mb-3" />
+              <p className="text-sm text-onSurfaceVariant font-mono">Loading movies from database...</p>
+            </div>
+          ) : (
+            <MovieTable
+              movies={paginatedMovies}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              allSelected={allOnPageSelected}
+            />
+          )}
 
           {/* Pagination + Stats */}
           <div className="flex items-center justify-between rounded-b-xl border border-t-0 border-white/10 px-4 py-3 text-xs text-onSurfaceVariant bg-surface-variant/40">
             <div className="flex items-center gap-4 flex-wrap">
               <span>
-                Showing {(page - 1) * PAGE_SIZE + 1}–
+                Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
                 {Math.min(page * PAGE_SIZE, filtered.length)} of{" "}
                 {filtered.length} titles
               </span>
@@ -418,7 +593,104 @@ export default function MovieManagement() {
         }}
         onSave={handleSave}
         editMovie={editingMovie}
+        isSaving={isSaving}
       />
+
+      {/* Delete Movie Confirmation Modal (styled same as Users page) */}
+      {deletingMovie && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <AlertTriangle size={24} />
+              <h3 className="font-heading font-bold text-lg text-onSurface">
+                Delete Movie
+              </h3>
+            </div>
+
+            <p className="text-onSurfaceVariant text-sm mb-4 leading-relaxed">
+              Are you sure you want to delete movie{" "}
+              <strong className="text-onSurface">{deletingMovie.title}</strong>?
+              This action is permanent and cannot be undone.
+            </p>
+
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setDeletingMovie(null)}
+                disabled={isSubmittingDelete}
+                className="px-4 py-2 rounded bg-white/5 text-onSurface text-sm font-medium hover:bg-white/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isSubmittingDelete}
+                className="px-4 py-2 rounded bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition flex items-center gap-2"
+              >
+                {isSubmittingDelete && (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {isSubmittingDelete ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Movies Confirmation Modal (styled same as Users page) */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <AlertTriangle size={24} />
+              <h3 className="font-heading font-bold text-lg text-onSurface">
+                Delete Selected Movies
+              </h3>
+            </div>
+
+            <p className="text-onSurfaceVariant text-sm mb-4 leading-relaxed">
+              Are you sure you want to delete{" "}
+              <strong className="text-onSurface">{selectedIds.size} selected movie(s)</strong>?
+              This action is permanent and cannot be undone.
+            </p>
+
+            {bulkDeleteError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs">
+                {bulkDeleteError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(false)}
+                disabled={isSubmittingBulkDelete}
+                className="px-4 py-2 rounded bg-white/5 text-onSurface text-sm font-medium hover:bg-white/10 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBulkDelete}
+                disabled={isSubmittingBulkDelete}
+                className="px-4 py-2 rounded bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition flex items-center gap-2"
+              >
+                {isSubmittingBulkDelete && (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {isSubmittingBulkDelete ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -188,6 +188,10 @@ const theaters: Theater[] = [
   { id: 'th-hall-2', name: 'Hall 2', location: 'Floor 2 - West Wing' },
   { id: 'th-hall-3', name: 'Hall 3', location: 'Floor 3 - IMAX' },
   { id: 'th-hall-4', name: 'Hall 4', location: 'Floor 3 - 4DX' },
+  { id: 'th-hall-5', name: 'Hall 5', location: 'Floor 4 - VIP Lounge' },
+  { id: 'th-hall-6', name: 'Hall 6', location: 'Floor 4 - Dolby Atmos' },
+  { id: 'th-hall-7', name: 'Hall 7', location: 'Floor 4 - ScreenX' },
+  { id: 'th-hall-8', name: 'Hall 8', location: 'Floor 2 - Central' },
 ];
 
 const screenings: Screening[] = [
@@ -455,8 +459,90 @@ const halls: TheaterHall[] = [
 
 export const getVenues = async (): Promise<TheaterVenue[]> => venues;
 
+export const createVenue = async (data: Partial<TheaterVenue>): Promise<TheaterVenue> => {
+  const newVenue: TheaterVenue = {
+    id: `v-${Date.now()}`,
+    name: data.name || "New Venue",
+    address: data.address || "",
+    imageUrl: data.imageUrl || "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=600&h=300&fit=crop",
+    status: data.status || "Active",
+    hallCount: data.hallCount || 0,
+    capacity: data.capacity || 0,
+  };
+  venues.push(newVenue);
+  return newVenue;
+};
+
+export const updateVenue = async (id: string, data: Partial<TheaterVenue>): Promise<TheaterVenue> => {
+  const index = venues.findIndex((v) => v.id === id);
+  if (index === -1) throw new Error("Venue not found");
+  venues[index] = { ...venues[index], ...data };
+  return venues[index];
+};
+
+export const deleteVenue = async (id: string): Promise<boolean> => {
+  const index = venues.findIndex((v) => v.id === id);
+  if (index === -1) return false;
+  venues.splice(index, 1);
+  for (let i = halls.length - 1; i >= 0; i--) {
+    if (halls[i].venueId === id) {
+      halls.splice(i, 1);
+    }
+  }
+  return true;
+};
+
 export const getHallsForVenue = async (venueId: string): Promise<TheaterHall[]> =>
   halls.filter((h) => h.venueId === venueId);
+
+export const createHall = async (venueId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
+  const newHall: TheaterHall = {
+    id: `h-${Date.now()}`,
+    venueId,
+    name: data.name || "New Hall",
+    screenType: data.screenType || "STANDARD",
+    soundSystem: data.soundSystem || "Dolby Atmos",
+    capacity: Number(data.capacity) || 100,
+    status: data.status || "Active",
+  };
+  halls.push(newHall);
+
+  const venue = venues.find((v) => v.id === venueId);
+  if (venue) {
+    const venueHalls = halls.filter((h) => h.venueId === venueId);
+    venue.hallCount = venueHalls.length;
+    venue.capacity = venueHalls.reduce((sum, h) => sum + h.capacity, 0);
+  }
+  return newHall;
+};
+
+export const updateHall = async (hallId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
+  const index = halls.findIndex((h) => h.id === hallId);
+  if (index === -1) throw new Error("Hall not found");
+  halls[index] = { ...halls[index], ...data };
+
+  const venue = venues.find((v) => v.id === halls[index].venueId);
+  if (venue) {
+    const venueHalls = halls.filter((h) => h.venueId === venue.id);
+    venue.capacity = venueHalls.reduce((sum, h) => sum + h.capacity, 0);
+  }
+  return halls[index];
+};
+
+export const deleteHall = async (hallId: string): Promise<boolean> => {
+  const index = halls.findIndex((h) => h.id === hallId);
+  if (index === -1) return false;
+  const venueId = halls[index].venueId;
+  halls.splice(index, 1);
+
+  const venue = venues.find((v) => v.id === venueId);
+  if (venue) {
+    const venueHalls = halls.filter((h) => h.venueId === venueId);
+    venue.hallCount = venueHalls.length;
+    venue.capacity = venueHalls.reduce((sum, h) => sum + h.capacity, 0);
+  }
+  return true;
+};
 
 export const getVenueStats = async () => {
   const totalVenues = venues.length;

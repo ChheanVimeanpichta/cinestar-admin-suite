@@ -74,7 +74,7 @@ export const deleteUserById = async (req: Request, res: Response) => {
   }
   const successCust = await deleteCustomer(id);
   if (successCust) {
-    res.json({ success: true, message: 'Customer deleted successfully' });
+    res.json({ success: true, message: 'Customer account disabled successfully' });
     return;
   }
   res.status(404).json({ message: 'User not found' });

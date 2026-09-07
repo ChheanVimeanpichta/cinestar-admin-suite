@@ -174,7 +174,10 @@ export async function fetchUsers(params: FetchUsersParams): Promise<FetchUsersRe
   }
 }
 
-export function updateAdminUser(id: string, data: { name: string; email: string; avatarUrl?: string }): Promise<AdminUserRecord> {
+export function updateAdminUser(
+  id: string,
+  data: { name?: string; email?: string; status?: string; avatarUrl?: string }
+): Promise<AdminUserRecord> {
   return apiPut<AdminUserRecord>(`/users/${id}`, data);
 }
 

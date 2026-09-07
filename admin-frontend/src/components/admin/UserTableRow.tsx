@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, UserX, UserCheck } from "lucide-react";
 import { AdminUserRecord } from "../../types";
 
 const roleStyles: Record<string, string> = {
@@ -25,6 +25,7 @@ interface UserTableRowProps {
   currentUserIsAdmin?: boolean;
   onEdit?: (user: AdminUserRecord) => void;
   onDelete?: (user: AdminUserRecord) => void;
+  onReactivate?: (user: AdminUserRecord) => void;
 }
 
 export default function UserTableRow({
@@ -32,6 +33,7 @@ export default function UserTableRow({
   currentUserIsAdmin = true,
   onEdit,
   onDelete,
+  onReactivate,
 }: UserTableRowProps) {
   const isSuspended = user.status === "Suspended";
   const isPrimaryAdmin = user.email.toLowerCase() === "admin@gmail.com";
@@ -39,7 +41,7 @@ export default function UserTableRow({
   return (
     <tr
       className={`border-b border-white/5 last:border-0 transition-colors ${
-        isSuspended ? "bg-accent/5" : "hover:bg-white/[0.02]"
+        isSuspended ? "bg-red-500/[0.03]" : "hover:bg-white/[0.02]"
       }`}
     >
       <td className="py-3.5 pr-4 pl-6">
@@ -80,10 +82,12 @@ export default function UserTableRow({
         <span className="flex items-center gap-1.5 text-sm">
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              isSuspended ? "bg-onSurfaceVariant" : "bg-green-400"
+              isSuspended ? "bg-red-400" : "bg-green-400"
             }`}
           />
-          <span className={isSuspended ? "text-onSurfaceVariant" : "text-onSurface"}>{user.status}</span>
+          <span className={isSuspended ? "text-red-300 font-medium" : "text-onSurface"}>
+            {isSuspended ? "Disabled" : "Active"}
+          </span>
         </span>
       </td>
       <td className="pr-4 text-onSurfaceVariant text-sm">{user.joinDate}</td>
@@ -100,13 +104,29 @@ export default function UserTableRow({
             </button>
           )}
           {currentUserIsAdmin && !isPrimaryAdmin && (
-            <button
-              onClick={() => onDelete?.(user)}
-              title="Delete User"
-              className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
-            >
-              <Trash2 size={14} />
-            </button>
+            <>
+              {user.role === "Customer" && isSuspended ? (
+                <button
+                  onClick={() => onReactivate?.(user)}
+                  title="Enable Customer (Restore Access)"
+                  className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
+                >
+                  <UserCheck size={14} />
+                </button>
+              ) : null}
+              <button
+                onClick={() => onDelete?.(user)}
+                title={user.role === "Customer" ? (isSuspended ? "Already Disabled" : "Disable Customer") : "Delete User"}
+                disabled={user.role === "Customer" && isSuspended}
+                className={`p-1.5 rounded bg-white/5 transition-colors ${
+                  user.role === "Customer" && isSuspended
+                    ? "opacity-30 cursor-not-allowed text-onSurfaceVariant"
+                    : "text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10"
+                }`}
+              >
+                {user.role === "Customer" ? <UserX size={14} /> : <Trash2 size={14} />}
+              </button>
+            </>
           )}
         </div>
       </td>

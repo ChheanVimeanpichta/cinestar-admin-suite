@@ -6,6 +6,7 @@ import {
   verifyAdminCredentials,
 } from '../services/authService.js';
 import { signAdminToken } from '../utils/jwt.js';
+import { recordSecurityEvent } from '../services/securityService.js';
 
 export const loginAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -19,9 +20,24 @@ export const loginAdmin = async (req: Request, res: Response, next: NextFunction
     const { email, password } = parsed.data;
     const admin = await verifyAdminCredentials(email, password);
     if (!admin) {
+      recordSecurityEvent({
+        category: 'security',
+        tone: 'alert',
+        message: `Admin portal authentication failed for "${email}"`,
+        highlight: 'authentication failed',
+        user: email,
+      });
       res.status(401).json({ message: 'Invalid credentials' });
       return;
     }
+
+    recordSecurityEvent({
+      category: 'auth',
+      tone: 'neutral',
+      message: `Admin session initialized for ${admin.name} (${admin.email})`,
+      highlight: 'session initialized',
+      user: admin.name,
+    });
 
     const token = signAdminToken({ sub: admin.id, role: admin.role, email: admin.email });
     res.json({ token, admin });

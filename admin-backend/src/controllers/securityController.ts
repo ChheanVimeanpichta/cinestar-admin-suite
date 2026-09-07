@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
-import { getSecurityStream as getSecurityStreamData } from '../services/mockDataService.js';
+import { getDynamicSecurityStream } from '../services/securityService.js';
 
 export const getSecurityStream = async (_req: Request, res: Response) => {
-  res.json(await getSecurityStreamData());
+  try {
+    const stream = await getDynamicSecurityStream();
+    res.json(stream);
+  } catch (err: any) {
+    console.error('[securityController] Error fetching security stream:', err);
+    res.status(500).json({ message: 'Failed to fetch security stream' });
+  }
 };

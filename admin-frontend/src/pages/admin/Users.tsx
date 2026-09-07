@@ -184,16 +184,36 @@ export default function Users() {
     setDeleteError("");
   };
 
+  const handleReactivateUser = async (user: AdminUserRecord) => {
+    try {
+      await updateAdminUser(user.id, { status: "Active" });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: "Active" } : u))
+      );
+      loadData();
+    } catch (err: any) {
+      alert(err?.message || "Failed to reactivate customer account");
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!deletingUser) return;
     setIsSubmittingDelete(true);
     setDeleteError("");
     try {
       await deleteAdminUser(deletingUser.id);
+      // For customer, optimistically mark as Suspended so they stay visible
+      if (deletingUser.role === "Customer") {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === deletingUser.id ? { ...u, status: "Suspended" } : u))
+        );
+      } else {
+        setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
+      }
       setDeletingUser(null);
       loadData();
     } catch (err: any) {
-      setDeleteError(err?.message || "Failed to delete user");
+      setDeleteError(err?.message || "Failed to process user action");
     } finally {
       setIsSubmittingDelete(false);
     }
@@ -318,6 +338,7 @@ export default function Users() {
                     currentUserIsAdmin={isAdmin}
                     onEdit={handleOpenEdit}
                     onDelete={handleOpenDelete}
+                    onReactivate={handleReactivateUser}
                   />
                 ))
               ) : (
@@ -491,19 +512,33 @@ export default function Users() {
         </div>
       )}
 
-      {/* Delete User Confirmation Modal */}
+      {/* Delete / Disable User Confirmation Modal */}
       {deletingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center gap-3 text-red-400 mb-3">
               <AlertTriangle size={24} />
-              <h3 className="font-heading font-bold text-lg text-onSurface">Delete User Account</h3>
+              <h3 className="font-heading font-bold text-lg text-onSurface">
+                {deletingUser.role === "Customer" ? "Disable Customer Account" : "Delete Staff Account"}
+              </h3>
             </div>
 
             <p className="text-onSurfaceVariant text-sm mb-4">
-              Are you sure you want to delete user{" "}
-              <strong className="text-onSurface">{deletingUser.name}</strong> (
-              <span className="font-mono text-xs">{deletingUser.email}</span>)? This action is permanent and cannot be undone.
+              {deletingUser.role === "Customer" ? (
+                <>
+                  Are you sure you want to disable customer{" "}
+                  <strong className="text-onSurface">{deletingUser.name}</strong> (
+                  <span className="font-mono text-xs">{deletingUser.email}</span>)?
+                  This customer will be marked as <strong>Disabled</strong>, and their access to sign in or book tickets from the website will be blocked.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to delete staff user{" "}
+                  <strong className="text-onSurface">{deletingUser.name}</strong> (
+                  <span className="font-mono text-xs">{deletingUser.email}</span>)?
+                  This action is permanent and cannot be undone.
+                </>
+              )}
             </p>
 
             {deleteError && (
@@ -526,7 +561,9 @@ export default function Users() {
                 disabled={isSubmittingDelete}
                 className="px-4 py-2 rounded bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition"
               >
-                {isSubmittingDelete ? "Deleting..." : "Confirm Delete"}
+                {isSubmittingDelete
+                  ? (deletingUser.role === "Customer" ? "Disabling..." : "Deleting...")
+                  : (deletingUser.role === "Customer" ? "Confirm Disable" : "Confirm Delete")}
               </button>
             </div>
           </div>

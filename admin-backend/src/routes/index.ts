@@ -15,11 +15,11 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/customers', customerRoutes);
 router.use('/dashboard', adminAuthMiddleware, dashboardRoutes);
-router.use('/movies', adminAuthMiddleware, movieRoutes);
+router.use('/movies', movieRoutes);
 router.use('/theaters', adminAuthMiddleware, theaterRoutes);
 router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
 router.use('/screenings', adminAuthMiddleware, screeningRoutes);
-router.use('/bookings', adminAuthMiddleware, bookingRoutes);
+router.use('/bookings', bookingRoutes);
 router.use('/security', adminAuthMiddleware, securityRoutes);
 router.use('/users', adminAuthMiddleware, userRoutes);
 

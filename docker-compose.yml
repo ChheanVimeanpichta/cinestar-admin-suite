@@ -15,7 +15,7 @@ services:
       - "5000:5000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-mysql://admin:password@database-2.co2sxxgtd0y5.us-east-1.rds.amazonaws.com:3306/cinestar?connect_timeout=15}
+      DATABASE_URL: ${DATABASE_URL:-mysql://admin:Pa$$w0rdPa$$w0rd@movie.cpys426owsu6.ap-southeast-1.rds.amazonaws.com:3306/cinestar?connect_timeout=15}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-key-123}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-dev-secret-key-123}
     restart: always

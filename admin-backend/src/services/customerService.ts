@@ -82,6 +82,14 @@ export const registerOrUpdateCustomer = async (data: {
   avatarUrl?: string;
 }): Promise<CustomerAccount> => {
   const normalizedEmail = data.email.toLowerCase();
+  const existing = await prisma.customer.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existing && existing.status === 'Suspended') {
+    throw new Error('ACCOUNT_DISABLED');
+  }
+
   const now = new Date();
   const joinDate = now.toLocaleDateString('en-US', {
     month: 'short',
@@ -127,8 +135,22 @@ export const registerOrUpdateCustomer = async (data: {
 
 export const deleteCustomer = async (id: string): Promise<boolean> => {
   try {
-    await prisma.customer.delete({
+    // Disable/suspend the customer instead of hard-deleting so record is preserved and access is blocked
+    await prisma.customer.update({
       where: { id },
+      data: { status: 'Suspended' },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const reactivateCustomer = async (id: string): Promise<boolean> => {
+  try {
+    await prisma.customer.update({
+      where: { id },
+      data: { status: 'Active' },
     });
     return true;
   } catch {

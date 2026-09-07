@@ -1,8 +1,6 @@
-// Dashboard data service.
-// NOTE: The backend has no DB tables for bookings/movies/theaters yet, so the
-// dashboard endpoints serve representative seed data matching the admin
-// frontend contracts. Swap these functions for real Prisma queries once the
-// Booking/Movie/Theater models exist.
+import { prisma } from '../config/db.js';
+import { getTheaters as getFallbackTheaters } from './mockDataService.js';
+
 
 export interface DashboardStats {
   totalRevenue: number;
@@ -151,15 +149,148 @@ export interface InventoryStats {
   nextShowTime: string;
 }
 
-const inventoryStats: InventoryStats = {
-  liveScreens: 8,
-  avgOccupancyPct: 64,
-  nextShowTime: '14:30',
+let cachedInventoryStats: InventoryStats | null = null;
+let lastInventoryFetchTime = 0;
+const INVENTORY_CACHE_TTL_MS = 5000; // 5 seconds cache to avoid DB exhaustion
+
+let cachedDashboardStats: DashboardStats | null = null;
+let lastDashboardFetchTime = 0;
+
+export const getDashboardStats = async (): Promise<DashboardStats> => {
+  const now = Date.now();
+  if (cachedDashboardStats && now - lastDashboardFetchTime < INVENTORY_CACHE_TTL_MS) {
+    return cachedDashboardStats;
+  }
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { status: { not: 'cancelled' } },
+    });
+    const screenings = await prisma.screening.findMany();
+
+    if (bookings.length > 0) {
+      const totalRevenue = Math.round(bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0));
+      const activeBookings = bookings.length;
+
+      const totalCapacity = screenings.length * 64;
+      let totalBookedSeats = 0;
+      for (const b of bookings) {
+        try {
+          const parsed = JSON.parse(b.seats || '[]');
+          totalBookedSeats += Array.isArray(parsed) ? parsed.length : 1;
+        } catch {
+          totalBookedSeats += 1;
+        }
+      }
+
+      const theaterOccupancyPct = totalCapacity > 0 ? Math.round((totalBookedSeats / totalCapacity) * 100) : stats.theaterOccupancyPct;
+
+      cachedDashboardStats = {
+        totalRevenue: totalRevenue > 0 ? totalRevenue : stats.totalRevenue,
+        revenueChangePct: stats.revenueChangePct,
+        activeBookings: activeBookings > 0 ? activeBookings : stats.activeBookings,
+        theaterOccupancyPct: theaterOccupancyPct > 0 ? theaterOccupancyPct : stats.theaterOccupancyPct,
+      };
+      lastDashboardFetchTime = now;
+      return cachedDashboardStats;
+    }
+  } catch (err: any) {
+    console.warn('[dashboardService] Error fetching dashboard stats from DB, serving seed stats:', err?.message || err);
+    if (cachedDashboardStats) return cachedDashboardStats;
+  }
+
+  return stats;
 };
 
-export const getDashboardStats = async (): Promise<DashboardStats> => stats;
+export const getInventoryStatsData = async (): Promise<InventoryStats> => {
+  const now = Date.now();
+  if (cachedInventoryStats && now - lastInventoryFetchTime < INVENTORY_CACHE_TTL_MS) {
+    return cachedInventoryStats;
+  }
 
-export const getInventoryStatsData = async (): Promise<InventoryStats> => inventoryStats;
+  try {
+    // 1. Calculate live screens count from Active theaters
+    const activeTheatersCount = await prisma.theater.count({
+      where: { status: 'Active' },
+    });
+
+    // 2. Query screenings & bookings
+    const screenings = await prisma.screening.findMany({
+      include: { bookings: true },
+    });
+
+    let liveScreens = activeTheatersCount;
+    if (liveScreens === 0 && screenings.length > 0) {
+      const uniqueHalls = new Set(screenings.map((s) => s.theaterId || s.hall));
+      liveScreens = uniqueHalls.size;
+    }
+
+    let avgOccupancyPct = 64;
+    let nextShowTime = '14:30';
+
+    if (screenings.length > 0) {
+      let totalCapacity = 0;
+      let totalBookedSeats = 0;
+      const currentTimeStr = new Date().toTimeString().slice(0, 5); // "HH:MM"
+      const upcomingTimes: string[] = [];
+
+      for (const s of screenings) {
+        const hallCapacity = 64; // Standard hall capacity
+        totalCapacity += hallCapacity;
+
+        let screeningBookedSeats = 0;
+        for (const b of s.bookings) {
+          if (b.status !== 'cancelled') {
+            try {
+              const parsed = JSON.parse(b.seats || '[]');
+              screeningBookedSeats += Array.isArray(parsed) ? parsed.length : 1;
+            } catch {
+              screeningBookedSeats += 1;
+            }
+          }
+        }
+        totalBookedSeats += screeningBookedSeats;
+
+        if (s.time) {
+          upcomingTimes.push(s.time);
+        }
+      }
+
+      if (totalCapacity > 0) {
+        avgOccupancyPct = Math.round((totalBookedSeats / totalCapacity) * 100);
+      }
+
+      upcomingTimes.sort();
+      const future = upcomingTimes.filter((t) => t >= currentTimeStr);
+      if (future.length > 0) {
+        nextShowTime = future[0];
+      } else if (upcomingTimes.length > 0) {
+        nextShowTime = upcomingTimes[0];
+      }
+    }
+
+    if (liveScreens === 0) {
+      const fallbackTheaters = await getFallbackTheaters();
+      liveScreens = fallbackTheaters.length > 0 ? fallbackTheaters.length : 8;
+    }
+
+    cachedInventoryStats = {
+      liveScreens,
+      avgOccupancyPct: Math.min(100, Math.max(0, avgOccupancyPct)),
+      nextShowTime,
+    };
+    lastInventoryFetchTime = now;
+    return cachedInventoryStats;
+  } catch (err: any) {
+    console.warn('[dashboardService] Error fetching inventory stats from DB, using fallback:', err?.message || err);
+    if (cachedInventoryStats) return cachedInventoryStats;
+    return {
+      liveScreens: 8,
+      avgOccupancyPct: 64,
+      nextShowTime: '14:30',
+    };
+  }
+};
 
 export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => weeklySales;
 

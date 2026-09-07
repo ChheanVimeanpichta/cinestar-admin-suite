@@ -3,10 +3,13 @@ import {
   getAllCustomers,
   registerOrUpdateCustomer,
   findCustomerById,
+  findCustomerByEmail,
   deleteCustomer,
+  reactivateCustomer,
   updateCustomer,
   verifyCustomerCredentials,
 } from '../services/customerService.js';
+import { recordSecurityEvent } from '../services/securityService.js';
 
 export const listCustomers = async (_req: Request, res: Response) => {
   const customers = await getAllCustomers();
@@ -21,9 +24,39 @@ export const loginCustomer = async (req: Request, res: Response) => {
   }
   const customer = await verifyCustomerCredentials(String(email), String(password));
   if (!customer) {
+    recordSecurityEvent({
+      category: 'security',
+      tone: 'warning',
+      message: `Failed customer login attempt for user "${email}" — invalid credentials`,
+      highlight: 'invalid credentials',
+      user: String(email),
+    });
     res.status(401).json({ message: 'Invalid credentials' });
     return;
   }
+  if (customer.status === 'Suspended') {
+    recordSecurityEvent({
+      category: 'security',
+      tone: 'alert',
+      message: `Access blocked: Suspended customer account "${email}" attempted login`,
+      highlight: 'Access blocked',
+      user: customer.name || String(email),
+    });
+    res.status(403).json({
+      success: false,
+      message: 'Your account has been disabled by an administrator. Please contact support.',
+    });
+    return;
+  }
+
+  recordSecurityEvent({
+    category: 'auth',
+    tone: 'neutral',
+    message: `Customer ${customer.name} (${customer.email}) authenticated successfully`,
+    highlight: 'authenticated successfully',
+    user: customer.name,
+  });
+
   res.json({
     success: true,
     message: 'Login successful',
@@ -46,12 +79,27 @@ export const registerCustomer = async (req: Request, res: Response) => {
       phone: phone ? String(phone) : undefined,
       avatarUrl: avatarUrl ? String(avatarUrl) : undefined,
     });
+
+    recordSecurityEvent({
+      category: 'auth',
+      tone: 'neutral',
+      message: `New customer registration: ${customer.name} (${customer.email}) joined CineStar`,
+      highlight: 'New customer registration',
+      user: customer.name,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Customer account registered successfully',
       customer,
     });
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message === 'ACCOUNT_DISABLED') {
+      res.status(403).json({
+        message: 'This account has been disabled by an administrator. Please contact support.',
+      });
+      return;
+    }
     res.status(500).json({ message: 'Failed to register customer' });
   }
 };
@@ -63,6 +111,24 @@ export const getCustomer = async (req: Request, res: Response) => {
     return;
   }
   res.json(customer);
+};
+
+export const getCustomerStatus = async (req: Request, res: Response) => {
+  const email = String(req.params.email ?? req.query.email ?? '');
+  if (!email) {
+    res.status(400).json({ message: 'Email is required' });
+    return;
+  }
+  const customer = await findCustomerByEmail(email);
+  if (!customer) {
+    res.json({ exists: false, status: 'NotFound', isSuspended: false });
+    return;
+  }
+  res.json({
+    exists: true,
+    status: customer.status,
+    isSuspended: customer.status === 'Suspended',
+  });
 };
 
 export const updateCustomerById = async (req: Request, res: Response) => {
@@ -80,5 +146,40 @@ export const deleteCustomerById = async (req: Request, res: Response) => {
     res.status(404).json({ message: 'Customer not found' });
     return;
   }
-  res.json({ success: true, message: 'Customer deleted successfully' });
+  recordSecurityEvent({
+    category: 'security',
+    tone: 'alert',
+    message: `Customer account suspended by administrator: ID ${req.params.id}`,
+    highlight: 'account suspended',
+  });
+  res.json({ success: true, message: 'Customer account disabled successfully' });
+};
+
+export const reactivateCustomerById = async (req: Request, res: Response) => {
+  const reactivated = await reactivateCustomer(String(req.params.id));
+  if (!reactivated) {
+    res.status(404).json({ message: 'Customer not found' });
+    return;
+  }
+  recordSecurityEvent({
+    category: 'security',
+    tone: 'neutral',
+    message: `Customer account reactivated by administrator: ID ${req.params.id}`,
+    highlight: 'account reactivated',
+  });
+  res.json({ success: true, message: 'Customer account reactivated successfully' });
+};
+
+export const logoutCustomer = async (req: Request, res: Response) => {
+  const { email, name } = req.body ?? {};
+  if (email || name) {
+    recordSecurityEvent({
+      category: 'auth',
+      tone: 'neutral',
+      message: `Customer session terminated for ${name || 'User'} (${email || 'web'})`,
+      highlight: 'session terminated',
+      user: name || email,
+    });
+  }
+  res.json({ success: true, message: 'Customer logged out successfully' });
 };

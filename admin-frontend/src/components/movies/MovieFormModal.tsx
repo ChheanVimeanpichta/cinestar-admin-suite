@@ -7,11 +7,12 @@ interface MovieFormModalProps {
   onClose: () => void;
   onSave: (movie: Movie) => void;
   editMovie?: Movie | null;
+  isSaving?: boolean;
 }
 
 const badgeOptions = ["IMAX", "4DX", "CineStar", "DOLBY", "2D"];
 
-export default function MovieFormModal({ open, onClose, onSave, editMovie }: MovieFormModalProps) {
+export default function MovieFormModal({ open, onClose, onSave, editMovie, isSaving = false }: MovieFormModalProps) {
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [score, setScore] = useState<number | null>(null);
@@ -72,6 +73,22 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie }: Mov
     onClose();
   };
 
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (JPG, PNG, WebP).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === "string") {
+        setPoster(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
@@ -84,7 +101,7 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie }: Mov
               {isEditing ? "Edit Movie" : "New Movie Entry"}
             </h2>
             <p className="font-mono text-[10px] text-onSurfaceVariant mt-1 uppercase tracking-wide">
-              {isEditing ? `Editing: ${editMovie?.title}` : "Upload assets &amp; metadata"}
+              {isEditing ? `Editing: ${editMovie?.title}` : "Upload assets & metadata"}
             </p>
           </div>
           <button
@@ -103,25 +120,43 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie }: Mov
               Poster Image
             </label>
             <div className="flex items-start gap-4">
-              {poster ? (
-                <img
-                  src={poster}
-                  alt="Preview"
-                  className="w-24 h-36 object-cover rounded border border-white/10"
+              <label className="cursor-pointer group relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFile}
+                  className="hidden"
                 />
-              ) : (
-                <div className="w-24 h-36 rounded border border-dashed border-white/15 bg-white/[0.02] flex flex-col items-center justify-center gap-1 shrink-0">
-                  <Upload size={18} className="text-onSurfaceVariant" />
-                  <span className="font-mono text-[8px] text-onSurfaceVariant uppercase">Preview</span>
-                </div>
-              )}
-              <input
-                type="text"
-                value={poster}
-                onChange={(e) => setPoster(e.target.value)}
-                placeholder="Paste poster image URL..."
-                className="flex-1 bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
-              />
+                {poster ? (
+                  <div className="relative">
+                    <img
+                      src={poster}
+                      alt="Preview"
+                      className="w-24 h-36 object-cover rounded border border-white/10 group-hover:opacity-80 transition"
+                    />
+                    <span className="absolute bottom-1 left-1 right-1 bg-black/75 text-[9px] text-center font-mono py-0.5 rounded text-white opacity-0 group-hover:opacity-100 transition">
+                      Change
+                    </span>
+                  </div>
+                ) : (
+                  <div className="w-24 h-36 rounded border border-dashed border-white/15 bg-white/[0.02] flex flex-col items-center justify-center gap-1 shrink-0 group-hover:border-accent/50 group-hover:bg-accent/5 transition">
+                    <Upload size={18} className="text-onSurfaceVariant group-hover:text-accent transition" />
+                    <span className="font-mono text-[8px] text-onSurfaceVariant uppercase group-hover:text-accent">Upload</span>
+                  </div>
+                )}
+              </label>
+              <div className="flex-1 space-y-2">
+                <input
+                  type="text"
+                  value={poster}
+                  onChange={(e) => setPoster(e.target.value)}
+                  placeholder="Paste poster image URL or click preview to upload..."
+                  className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
+                />
+                <p className="text-[11px] text-onSurfaceVariant">
+                  Click the box on the left to upload from your computer, or paste an external image URL.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -239,15 +274,26 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie }: Mov
             <button
               type="button"
               onClick={handleClose}
-              className="px-5 py-2.5 rounded font-body text-sm text-onSurfaceVariant hover:text-onSurface hover:bg-white/5 transition-colors"
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded font-body text-sm text-onSurfaceVariant hover:text-onSurface hover:bg-white/5 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded bg-accent text-onSurface font-body font-semibold text-sm hover:brightness-110 transition"
+              disabled={isSaving}
+              className="px-5 py-2.5 rounded bg-accent text-onSurface font-body font-semibold text-sm hover:brightness-110 transition disabled:opacity-60 flex items-center gap-2"
             >
-              {isEditing ? "Save Changes" : "Add Movie"}
+              {isSaving && (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+              {isSaving
+                ? isEditing
+                  ? "Saving Changes..."
+                  : "Adding Movie..."
+                : isEditing
+                ? "Save Changes"
+                : "Add Movie"}
             </button>
           </div>
         </form>

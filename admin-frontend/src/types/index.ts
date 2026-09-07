@@ -106,9 +106,14 @@ export interface BookingLedgerEntry {
   screeningDate: string;
   screeningTime: string;
   seats: string[];
+  totalPrice?: number;
+  paymentMethod?: string;
+  status?: string;
+  createdAt?: string;
 }
 
 export type SecurityEventTone = "alert" | "neutral" | "warning";
+export type SecurityCategory = "all" | "booking" | "auth" | "security" | "system";
 
 export interface SecurityStreamEvent {
   id: string;
@@ -116,6 +121,9 @@ export interface SecurityStreamEvent {
   message: string;
   highlight?: string;
   tone: SecurityEventTone;
+  category?: string;
+  timestamp?: string;
+  user?: string;
 }
 
 export type UserRole = "Admin" | "Staff" | "Customer";
