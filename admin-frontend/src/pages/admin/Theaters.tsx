@@ -147,16 +147,28 @@ export default function Theaters() {
 
   // Venue CRUD Handlers
   const handleOpenAddVenue = () => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to add venues." });
+      return;
+    }
     setEditingVenue(null);
     setShowVenueModal(true);
   };
 
   const handleOpenEditVenue = (venue: TheaterVenue) => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to edit venues." });
+      return;
+    }
     setEditingVenue(venue);
     setShowVenueModal(true);
   };
 
   const handleSaveVenue = async (venueData: Partial<TheaterVenue>) => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to save venues." });
+      return;
+    }
     try {
       setIsSavingVenue(true);
       if (editingVenue) {
@@ -182,6 +194,10 @@ export default function Theaters() {
   };
 
   const confirmDeleteVenue = async () => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to delete venues." });
+      return;
+    }
     if (!deletingVenue) return;
     try {
       setIsDeletingVenue(true);
@@ -202,16 +218,28 @@ export default function Theaters() {
 
   // Hall CRUD Handlers
   const handleOpenAddHall = () => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to add halls." });
+      return;
+    }
     setEditingHall(null);
     setShowHallModal(true);
   };
 
   const handleOpenEditHall = (hall: TheaterHall) => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to edit halls." });
+      return;
+    }
     setEditingHall(hall);
     setShowHallModal(true);
   };
 
   const handleSaveHall = async (hallData: Partial<TheaterHall>) => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to save halls." });
+      return;
+    }
     if (!selectedVenueId) return;
     try {
       setIsSavingHall(true);
@@ -234,6 +262,10 @@ export default function Theaters() {
   };
 
   const confirmDeleteHall = async () => {
+    if (!isAdmin) {
+      setFeedback({ type: "error", message: "Access denied: Only Administrators have permission to delete halls." });
+      return;
+    }
     if (!deletingHall || !selectedVenueId) return;
     try {
       setIsDeletingHall(true);
@@ -496,13 +528,15 @@ export default function Theaters() {
                   ))}
                 </div>
 
-                <button
-                  onClick={handleOpenAddHall}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-md shadow-red-600/20 shrink-0"
-                >
-                  <Plus size={14} />
-                  Add Hall
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={handleOpenAddHall}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-md shadow-red-600/20 shrink-0"
+                  >
+                    <Plus size={14} />
+                    Add Hall
+                  </button>
+                )}
               </div>
             </div>
 
@@ -865,29 +899,33 @@ export default function Theaters() {
       )}
 
       {/* Add / Edit Venue Modal */}
-      <VenueFormModal
-        open={showVenueModal}
-        onClose={() => {
-          setShowVenueModal(false);
-          setEditingVenue(null);
-        }}
-        onSave={handleSaveVenue}
-        editVenue={editingVenue}
-        isSaving={isSavingVenue}
-      />
+      {isAdmin && (
+        <VenueFormModal
+          open={showVenueModal}
+          onClose={() => {
+            setShowVenueModal(false);
+            setEditingVenue(null);
+          }}
+          onSave={handleSaveVenue}
+          editVenue={editingVenue}
+          isSaving={isSavingVenue}
+        />
+      )}
 
       {/* Add / Edit Hall Modal */}
-      <HallFormModal
-        open={showHallModal}
-        onClose={() => {
-          setShowHallModal(false);
-          setEditingHall(null);
-        }}
-        onSave={handleSaveHall}
-        venueName={selectedVenue?.name || ""}
-        editHall={editingHall}
-        isSaving={isSavingHall}
-      />
+      {isAdmin && (
+        <HallFormModal
+          open={showHallModal}
+          onClose={() => {
+            setShowHallModal(false);
+            setEditingHall(null);
+          }}
+          onSave={handleSaveHall}
+          venueName={selectedVenue?.name || ""}
+          editHall={editingHall}
+          isSaving={isSavingHall}
+        />
+      )}
 
       {/* Interactive Seating Layout Preview Modal */}
       <SeatMapModal

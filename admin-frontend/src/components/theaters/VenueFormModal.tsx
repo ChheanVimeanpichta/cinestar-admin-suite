@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { TheaterVenue } from "../../types";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 interface VenueFormModalProps {
   open: boolean;
@@ -43,6 +44,8 @@ export default function VenueFormModal({
   editVenue,
   isSaving = false,
 }: VenueFormModalProps) {
+  const { admin } = useAdminAuth();
+  const isAdmin = admin?.role?.toLowerCase() === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -66,7 +69,7 @@ export default function VenueFormModal({
     }
   }, [editVenue, open]);
 
-  if (!open) return null;
+  if (!open || !isAdmin) return null;
 
   // Process a chosen or dropped file into a base64 Data URL
   const processImageFile = (file: File) => {

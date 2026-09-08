@@ -91,23 +91,30 @@ export default function HallRow({
       </td>
 
       <td className="py-4 pl-4 pr-6">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onEdit}
-            title="Edit Hall"
-            className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-onSurface hover:bg-white/10 transition-colors"
-          >
-            <Pencil size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            title="Delete Hall"
-            className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            <Trash2 size={15} />
-          </button>
+        <div className="flex items-center justify-end gap-2">
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              title="Edit Hall"
+              className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-onSurface hover:bg-white/10 transition-colors"
+            >
+              <Pencil size={15} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              title="Delete Hall"
+              className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+          {!onEdit && !onDelete && (
+            <span className="text-[11px] text-onSurfaceVariant/60 italic font-mono">Read-only</span>
+          )}
         </div>
       </td>
     </tr>

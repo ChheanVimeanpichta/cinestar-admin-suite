@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Tv, Volume2, Users, LayoutGrid } from "lucide-react";
 import { TheaterHall } from "../../types";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 interface HallFormModalProps {
   open: boolean;
@@ -22,6 +23,8 @@ export default function HallFormModal({
   editHall,
   isSaving = false,
 }: HallFormModalProps) {
+  const { admin } = useAdminAuth();
+  const isAdmin = admin?.role?.toLowerCase() === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
   const [name, setName] = useState("");
   const [screenType, setScreenType] = useState<TheaterHall["screenType"]>("STANDARD");
   const [soundSystem, setSoundSystem] = useState("Dolby Atmos");
@@ -46,7 +49,7 @@ export default function HallFormModal({
     }
   }, [editHall, open]);
 
-  if (!open) return null;
+  if (!open || !isAdmin) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
