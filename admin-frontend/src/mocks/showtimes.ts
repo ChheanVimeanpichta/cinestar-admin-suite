@@ -14,7 +14,7 @@ export interface ShowtimeStats {
   activeHalls: number;
 }
 
-const allShowtimeRows: ShowtimeRowData[] = [
+export const allShowtimeRows: ShowtimeRowData[] = [
   {
     id: "sc-001",
     posterUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQWWatxhrUO2mPie7B5xc-V8DXxsGe9a4CFhAfBIvbJPA&s=10",
