@@ -16,7 +16,7 @@ import UserTableRow from "../../components/admin/UserTableRow";
 
 export default function Users() {
   const { admin: currentAdmin } = useAdminAuth();
-  const isAdmin = currentAdmin?.email?.toLowerCase() === "admin@gmail.com";
+  const isAdmin = currentAdmin?.role?.toLowerCase() === "admin" || currentAdmin?.email?.toLowerCase() === "admin@gmail.com";
 
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [filteredTotal, setFilteredTotal] = useState(0);
@@ -248,12 +248,25 @@ export default function Users() {
       {/* Hero */}
       <div className="flex items-stretch gap-6 mb-6">
         <div className="flex-1 bg-surface-variant rounded p-8">
-          <h1 className="font-heading font-black text-4xl uppercase text-onSurface leading-none">
-            User<br />Management
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading font-black text-4xl uppercase text-onSurface leading-none">
+              User<br />Management
+            </h1>
+            {!isAdmin && (
+              <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
+                Staff (Read-Only)
+              </span>
+            )}
+          </div>
           <p className="text-onSurfaceVariant text-body-md mt-4 max-w-md">
             Oversee administrative accounts, assign privileges, and manage real-time platform users.
           </p>
+          {!isAdmin && (
+            <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
+              <span>Staff View: User account modifications, creation, and suspensions are restricted to Administrators.</span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-3 shrink-0 w-48">

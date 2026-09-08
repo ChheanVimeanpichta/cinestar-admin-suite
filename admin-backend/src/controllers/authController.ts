@@ -5,6 +5,7 @@ import {
   findAdminById,
   verifyAdminCredentials,
 } from '../services/authService.js';
+import { verifyCustomerCredentials } from '../services/customerService.js';
 import { signAdminToken } from '../utils/jwt.js';
 import { recordSecurityEvent } from '../services/securityService.js';
 
@@ -18,7 +19,39 @@ export const loginAdmin = async (req: Request, res: Response, next: NextFunction
     }
 
     const { email, password } = parsed.data;
-    const admin = await verifyAdminCredentials(email, password);
+    let admin = await verifyAdminCredentials(email, password);
+
+    if (!admin) {
+      // Check if user has an account in the customer/staff table
+      const customer = await verifyCustomerCredentials(email, password);
+      if (customer) {
+        const userRole = String(customer.role || 'Customer');
+        if (userRole !== 'Admin' && userRole !== 'Staff') {
+          recordSecurityEvent({
+            category: 'security',
+            tone: 'alert',
+            message: `Access denied: Customer "${customer.email}" attempted to log in to Admin Dashboard`,
+            highlight: 'Access denied',
+            user: customer.name,
+          });
+          res.status(403).json({
+            message: 'Access denied. Only Admin and Staff accounts have permission to access the Admin Dashboard.',
+          });
+          return;
+        }
+
+        // Staff or Admin promoted user
+        admin = {
+          id: customer.id,
+          email: customer.email,
+          name: customer.name,
+          role: userRole.toLowerCase() === 'admin' ? 'admin' : 'staff',
+          avatarUrl: customer.avatarUrl,
+          createdAt: customer.createdAt,
+        };
+      }
+    }
+
     if (!admin) {
       recordSecurityEvent({
         category: 'security',
@@ -34,7 +67,7 @@ export const loginAdmin = async (req: Request, res: Response, next: NextFunction
     recordSecurityEvent({
       category: 'auth',
       tone: 'neutral',
-      message: `Admin session initialized for ${admin.name} (${admin.email})`,
+      message: `${admin.role === 'admin' ? 'Admin' : 'Staff'} session initialized for ${admin.name} (${admin.email})`,
       highlight: 'session initialized',
       user: admin.name,
     });

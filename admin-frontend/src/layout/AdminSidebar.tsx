@@ -23,6 +23,7 @@ const links = [
 export default function AdminSidebar() {
   const { admin, logout } = useAdminAuth();
   const navigate = useNavigate();
+  const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
 
   return (
     <aside className="w-64 bg-surface border-r border-white/10 flex flex-col p-6">
@@ -32,14 +33,29 @@ export default function AdminSidebar() {
         </div>
         <div>
           <p className="font-heading font-bold text-onSurface text-sm leading-none">CineStar</p>
-          <p className="font-mono text-[10px] text-onSurfaceVariant tracking-wide">TERMINAL ACCESS</p>
+          <p className="font-mono text-[10px] text-onSurfaceVariant tracking-wide">
+            {isAdmin ? "TERMINAL ACCESS" : "STAFF ACCESS"}
+          </p>
         </div>
       </div>
 
-      <button className="flex items-center justify-center gap-2 bg-accent text-onSurface rounded py-3 mb-6 font-body font-medium text-sm hover:brightness-110 transition">
-        <PlusCircle size={16} />
-        New Screening
-      </button>
+      {isAdmin ? (
+        <button
+          onClick={() => navigate("/admin/showtimes")}
+          className="flex items-center justify-center gap-2 bg-accent text-onSurface rounded py-3 mb-6 font-body font-medium text-sm hover:brightness-110 transition"
+        >
+          <PlusCircle size={16} />
+          New Screening
+        </button>
+      ) : (
+        <button
+          onClick={() => navigate("/admin/bookings")}
+          className="flex items-center justify-center gap-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded py-2.5 mb-6 font-mono text-xs uppercase tracking-wider hover:bg-emerald-500/30 transition"
+        >
+          <ClipboardList size={14} />
+          Ticket Check-In
+        </button>
+      )}
 
       <nav className="flex flex-col gap-1 flex-1">
         {links.map((link) => (
@@ -69,12 +85,14 @@ export default function AdminSidebar() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="text-onSurface text-sm font-body font-medium truncate">{admin?.name ?? "Admin"}</p>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${
-              admin?.email?.toLowerCase() === "admin@gmail.com"
-                ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-            }`}>
-              {admin?.email?.toLowerCase() === "admin@gmail.com" ? "admin" : "staff"}
+            <span
+              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider ${
+                isAdmin
+                  ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+              }`}
+            >
+              {isAdmin ? "admin" : "staff"}
             </span>
           </div>
           <p className="text-onSurfaceVariant text-xs truncate">{admin?.email ?? "admin@gmail.com"}</p>

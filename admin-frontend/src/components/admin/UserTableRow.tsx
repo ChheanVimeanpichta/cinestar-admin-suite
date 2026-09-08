@@ -94,39 +94,43 @@ export default function UserTableRow({
       <td className="pr-4 text-onSurface text-sm font-mono">{user.bookingCount}</td>
       <td className="pr-6 text-right">
         <div className="flex items-center justify-end gap-1.5">
-          {currentUserIsAdmin && (
-            <button
-              onClick={() => onEdit?.(user)}
-              title="Edit User"
-              className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-accent hover:bg-white/10 transition-colors"
-            >
-              <Pencil size={14} />
-            </button>
-          )}
-          {currentUserIsAdmin && !isPrimaryAdmin && (
+          {currentUserIsAdmin ? (
             <>
-              {user.role === "Customer" && isSuspended ? (
-                <button
-                  onClick={() => onReactivate?.(user)}
-                  title="Enable Customer (Restore Access)"
-                  className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
-                >
-                  <UserCheck size={14} />
-                </button>
-              ) : null}
               <button
-                onClick={() => onDelete?.(user)}
-                title={user.role === "Customer" ? (isSuspended ? "Already Disabled" : "Disable Customer") : "Delete User"}
-                disabled={user.role === "Customer" && isSuspended}
-                className={`p-1.5 rounded bg-white/5 transition-colors ${
-                  user.role === "Customer" && isSuspended
-                    ? "opacity-30 cursor-not-allowed text-onSurfaceVariant"
-                    : "text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10"
-                }`}
+                onClick={() => onEdit?.(user)}
+                title="Edit User"
+                className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-accent hover:bg-white/10 transition-colors"
               >
-                {user.role === "Customer" ? <UserX size={14} /> : <Trash2 size={14} />}
+                <Pencil size={14} />
               </button>
+              {!isPrimaryAdmin && (
+                <>
+                  {user.role === "Customer" && isSuspended ? (
+                    <button
+                      onClick={() => onReactivate?.(user)}
+                      title="Enable Customer (Restore Access)"
+                      className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
+                    >
+                      <UserCheck size={14} />
+                    </button>
+                  ) : null}
+                  <button
+                    onClick={() => onDelete?.(user)}
+                    title={user.role === "Customer" ? (isSuspended ? "Already Disabled" : "Disable Customer") : "Delete User"}
+                    disabled={user.role === "Customer" && isSuspended}
+                    className={`p-1.5 rounded bg-white/5 transition-colors ${
+                      user.role === "Customer" && isSuspended
+                        ? "opacity-30 cursor-not-allowed text-onSurfaceVariant"
+                        : "text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10"
+                    }`}
+                  >
+                    {user.role === "Customer" ? <UserX size={14} /> : <Trash2 size={14} />}
+                  </button>
+                </>
+              )}
             </>
+          ) : (
+            <span className="text-[11px] text-onSurfaceVariant/60 italic font-mono">Read-only</span>
           )}
         </div>
       </td>

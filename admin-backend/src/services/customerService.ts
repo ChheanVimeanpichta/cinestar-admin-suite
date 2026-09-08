@@ -7,7 +7,7 @@ export interface CustomerAccount {
   phone?: string;
   password?: string;
   avatarUrl?: string;
-  role: 'Customer';
+  role: 'Customer' | 'Staff' | 'Admin' | string;
   status: 'Active' | 'Suspended';
   joinDate: string;
   bookingCount: number;

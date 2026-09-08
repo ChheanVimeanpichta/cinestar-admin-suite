@@ -9,6 +9,7 @@ import {
   updateCustomer,
   verifyCustomerCredentials,
 } from '../services/customerService.js';
+import { verifyAdminCredentials, findAdminByEmail } from '../services/authService.js';
 import { recordSecurityEvent } from '../services/securityService.js';
 
 export const listCustomers = async (_req: Request, res: Response) => {
@@ -22,7 +23,24 @@ export const loginCustomer = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Email/username and password are required' });
     return;
   }
-  const customer = await verifyCustomerCredentials(String(email), String(password));
+  let customer = await verifyCustomerCredentials(String(email), String(password));
+  if (!customer) {
+    const admin = await verifyAdminCredentials(String(email), String(password));
+    if (admin) {
+      customer = {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        phone: '',
+        role: admin.role === 'admin' ? 'Admin' : 'Staff',
+        status: 'Active',
+        avatarUrl: admin.avatarUrl,
+        bookingCount: 0,
+        createdAt: admin.createdAt,
+      } as any;
+    }
+  }
+
   if (!customer) {
     recordSecurityEvent({
       category: 'security',
@@ -114,20 +132,31 @@ export const getCustomer = async (req: Request, res: Response) => {
 };
 
 export const getCustomerStatus = async (req: Request, res: Response) => {
-  const email = String(req.params.email ?? req.query.email ?? '');
+  const email = String(req.params.email ?? req.query.email ?? '').toLowerCase();
   if (!email) {
     res.status(400).json({ message: 'Email is required' });
     return;
   }
   const customer = await findCustomerByEmail(email);
   if (!customer) {
-    res.json({ exists: false, status: 'NotFound', isSuspended: false });
+    const admin = await findAdminByEmail(email);
+    if (admin) {
+      res.json({
+        exists: true,
+        status: 'Active',
+        isSuspended: false,
+        role: admin.role === 'admin' ? 'Admin' : 'Staff',
+      });
+      return;
+    }
+    res.json({ exists: false, status: 'NotFound', isSuspended: false, role: 'Customer' });
     return;
   }
   res.json({
     exists: true,
     status: customer.status,
     isSuspended: customer.status === 'Suspended',
+    role: customer.role || 'Customer',
   });
 };
 

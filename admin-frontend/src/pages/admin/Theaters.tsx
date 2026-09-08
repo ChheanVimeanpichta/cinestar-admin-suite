@@ -38,6 +38,7 @@ import VenueFormModal from "../../components/theaters/VenueFormModal";
 import HallFormModal from "../../components/theaters/HallFormModal";
 import SeatMapModal from "../../components/theaters/SeatMapModal";
 import VenueSwitcher from "../../components/theaters/VenueSwitcher";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 interface VenueStats {
   totalVenues: number;
@@ -47,6 +48,9 @@ interface VenueStats {
 }
 
 export default function Theaters() {
+  const { admin } = useAdminAuth();
+  const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
+
   const [stats, setStats] = useState<VenueStats | null>(null);
   const [venues, setVenues] = useState<TheaterVenue[]>([]);
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -407,30 +411,38 @@ export default function Theaters() {
 
               {/* Right: Actions */}
               <div className="flex flex-wrap items-center gap-2.5 self-stretch sm:self-auto justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleOpenEditVenue(selectedVenue)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-onSurface text-xs font-semibold border border-white/10 transition"
-                >
-                  <Pencil size={14} />
-                  Edit Venue
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeletingVenue(selectedVenue)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 text-onSurfaceVariant hover:text-red-400 text-xs font-semibold border border-white/10 hover:border-red-500/30 transition"
-                >
-                  <Trash2 size={14} />
-                  Delete Venue
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenAddHall}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-lg shadow-red-600/25"
-                >
-                  <Plus size={15} />
-                  Add Hall
-                </button>
+                {isAdmin ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditVenue(selectedVenue)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-onSurface text-xs font-semibold border border-white/10 transition"
+                    >
+                      <Pencil size={14} />
+                      Edit Venue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingVenue(selectedVenue)}
+                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 text-onSurfaceVariant hover:text-red-400 text-xs font-semibold border border-white/10 hover:border-red-500/30 transition"
+                    >
+                      <Trash2 size={14} />
+                      Delete Venue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddHall}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition shadow-lg shadow-red-600/25"
+                    >
+                      <Plus size={15} />
+                      Add Hall
+                    </button>
+                  </>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium">
+                    Staff (Read-Only)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -507,7 +519,7 @@ export default function Theaters() {
                     ? "No auditoriums match your filter."
                     : "No halls registered for this venue yet. Click 'Add Hall' to create one."}
                 </p>
-                {!searchHallQuery && selectedFormatFilter === "ALL" && (
+                {!searchHallQuery && selectedFormatFilter === "ALL" && isAdmin && (
                   <button
                     type="button"
                     onClick={handleOpenAddHall}
@@ -536,8 +548,8 @@ export default function Theaters() {
                       key={hall.id}
                       hall={hall}
                       onOpenMap={() => setViewingMapHall(hall)}
-                      onEdit={() => handleOpenEditHall(hall)}
-                      onDelete={() => setDeletingHall(hall)}
+                      onEdit={isAdmin ? () => handleOpenEditHall(hall) : undefined}
+                      onDelete={isAdmin ? () => setDeletingHall(hall) : undefined}
                     />
                   ))}
                 </tbody>
@@ -561,13 +573,15 @@ export default function Theaters() {
                 Select a cinema location to manage its auditoriums, formats, and seating layouts.
               </p>
             </div>
-            <button
-              onClick={handleOpenAddVenue}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-onSurface text-sm font-body font-semibold transition shadow-lg shadow-red-600/20 shrink-0 self-start sm:self-auto"
-            >
-              <Plus size={16} />
-              Add Venue
-            </button>
+            {isAdmin && (
+              <button
+                onClick={handleOpenAddVenue}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-onSurface text-sm font-body font-semibold transition shadow-lg shadow-red-600/20 shrink-0 self-start sm:self-auto"
+              >
+                <Plus size={16} />
+                Add Venue
+              </button>
+            )}
           </div>
 
           {/* Stat Cards */}
@@ -670,8 +684,8 @@ export default function Theaters() {
                   venue={venue}
                   isSelected={false}
                   onManageHalls={() => handleManageHalls(venue.id)}
-                  onEdit={() => handleOpenEditVenue(venue)}
-                  onDelete={() => setDeletingVenue(venue)}
+                  onEdit={isAdmin ? () => handleOpenEditVenue(venue) : undefined}
+                  onDelete={isAdmin ? () => setDeletingVenue(venue) : undefined}
                 />
               ))}
             </div>
@@ -753,22 +767,26 @@ export default function Theaters() {
                           >
                             Manage Halls
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditVenue(venue)}
-                            title="Edit Venue"
-                            className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-onSurface hover:bg-white/10 transition-colors"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeletingVenue(venue)}
-                            title="Delete Venue"
-                            className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditVenue(venue)}
+                                title="Edit Venue"
+                                className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-onSurface hover:bg-white/10 transition-colors"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVenue(venue)}
+                                title="Delete Venue"
+                                className="p-1.5 rounded-lg text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

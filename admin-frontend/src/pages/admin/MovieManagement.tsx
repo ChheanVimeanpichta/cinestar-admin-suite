@@ -28,6 +28,7 @@ import { fetchInventoryStats } from "../../services/dashboardApi";
 import MovieFormModal from "../../components/movies/MovieFormModal";
 import MovieTable from "../../components/movies/MovieTable";
 import { mockMovies } from "../../mocks/movies";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 const mockInventoryStats = {
   liveScreens: 8,
@@ -40,6 +41,9 @@ const badgeOptions = ["IMAX", "4DX", "CineStar", "DOLBY", "2D"];
 const PAGE_SIZE = 8;
 
 export default function MovieManagement() {
+  const { admin } = useAdminAuth();
+  const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
+
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get("q") || "";
 
@@ -316,16 +320,22 @@ export default function MovieManagement() {
               <Download className="h-4 w-4" />
               Export
             </button>
-            <button
-              onClick={() => {
-                setEditingMovie(null);
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-onSurface shadow-sm shadow-red-950 transition-colors hover:bg-red-500"
-            >
-              <Plus className="h-4 w-4" />
-              Add Movie
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => {
+                  setEditingMovie(null);
+                  setShowModal(true);
+                }}
+                className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-onSurface shadow-sm shadow-red-950 transition-colors hover:bg-red-500"
+              >
+                <Plus className="h-4 w-4" />
+                Add Movie
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono font-medium text-emerald-300">
+                Staff (Read-Only)
+              </span>
+            )}
           </div>
         </div>
 
@@ -471,7 +481,7 @@ export default function MovieManagement() {
         )}
 
         {/* Selection action bar */}
-        {selectedIds.size > 0 && (
+        {selectedIds.size > 0 && isAdmin && (
           <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-600/30 bg-red-600/10 px-4 py-3">
             <span className="text-sm font-medium text-red-300">
               {selectedIds.size} selected
@@ -511,12 +521,12 @@ export default function MovieManagement() {
           ) : (
             <MovieTable
               movies={paginatedMovies}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleSelect}
-              onToggleSelectAll={toggleSelectAll}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              allSelected={allOnPageSelected}
+              selectedIds={isAdmin ? selectedIds : undefined}
+              onToggleSelect={isAdmin ? toggleSelect : undefined}
+              onToggleSelectAll={isAdmin ? toggleSelectAll : undefined}
+              onEdit={isAdmin ? handleEdit : undefined}
+              onDelete={isAdmin ? handleDelete : undefined}
+              allSelected={isAdmin ? allOnPageSelected : false}
             />
           )}
 
