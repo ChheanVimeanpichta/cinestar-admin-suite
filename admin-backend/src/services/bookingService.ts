@@ -154,9 +154,139 @@ export const getBookingLogStatsFromDb = async (): Promise<BookingLogStats> => {
   return getFallbackStats();
 };
 
+export const getOccupiedSeatsFromDb = async (query: {
+  movieTitle?: string;
+  screeningDate?: string;
+  screeningTime?: string;
+  screeningId?: string;
+}): Promise<string[]> => {
+  try {
+    const whereClause: any = {
+      status: { notIn: ['cancelled', 'refunded'] },
+    };
+    if (query.movieTitle) {
+      whereClause.movieTitle = { contains: query.movieTitle };
+    }
+    if (query.screeningDate) {
+      whereClause.screeningDate = query.screeningDate;
+    }
+    if (query.screeningTime) {
+      whereClause.screeningTime = query.screeningTime;
+    }
+    if (query.screeningId) {
+      whereClause.screeningId = query.screeningId;
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: whereClause,
+      select: { seats: true },
+    });
+
+    const seatSet = new Set<string>();
+    for (const b of bookings) {
+      const parsed = parseSeats(b.seats);
+      for (const s of parsed) {
+        if (s) seatSet.add(s.trim().toUpperCase());
+      }
+    }
+
+    return Array.from(seatSet);
+  } catch (err: any) {
+    console.warn('[bookingService] Error getting occupied seats from DB:', err?.message || err);
+    return [];
+  }
+};
+
+export const getBookingsByCustomer = async (identifier: string) => {
+  try {
+    const cleanId = identifier.trim();
+    const customer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email: cleanId.toLowerCase() },
+          { id: cleanId },
+          { name: cleanId },
+        ],
+      },
+    });
+
+    const conditions: any[] = [
+      { userId: cleanId },
+      { userId: cleanId.toLowerCase() },
+      { customerName: cleanId },
+    ];
+
+    if (customer) {
+      conditions.push({ userId: customer.id });
+      conditions.push({ userId: customer.email });
+      conditions.push({ customerName: customer.name });
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        OR: conditions,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return bookings.map((b) => ({
+      id: b.id.startsWith('#') ? b.id : `#${b.id}`,
+      movieTitle: b.movieTitle,
+      date: b.screeningDate || new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: b.screeningTime || new Date(b.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      seats: parseSeats(b.seats),
+      ticketCount: parseSeats(b.seats).length,
+      total: b.totalPrice,
+      paymentMethod: b.paymentMethod,
+      status: b.status,
+      cinema: b.screeningId ? `Screen ${b.screeningId}` : 'CineStar Cinema',
+      createdAt: b.createdAt.toISOString(),
+    }));
+  } catch (err: any) {
+    console.warn('[bookingService] Error getting bookings by customer:', err?.message || err);
+    return [];
+  }
+};
+
 export const createBookingInDb = async (data: CreateBookingInput) => {
   try {
+    const requestedSeats = parseSeats(data.seats);
     const seatsStr = Array.isArray(data.seats) ? JSON.stringify(data.seats) : String(data.seats);
+
+    // Conflict Check: Prevent double-booking on same movie session
+    if (data.movieTitle && requestedSeats.length > 0) {
+      const conflictWhere: any = {
+        status: { notIn: ['cancelled', 'refunded'] },
+        movieTitle: data.movieTitle,
+      };
+      if (data.screeningDate) {
+        conflictWhere.screeningDate = data.screeningDate;
+      }
+      if (data.screeningTime) {
+        conflictWhere.screeningTime = data.screeningTime;
+      }
+
+      const existing = await prisma.booking.findMany({
+        where: conflictWhere,
+        select: { seats: true },
+      });
+
+      const alreadyOccupied = new Set<string>();
+      for (const eb of existing) {
+        for (const s of parseSeats(eb.seats)) {
+          alreadyOccupied.add(s.toUpperCase().trim());
+        }
+      }
+
+      const conflicting = requestedSeats.filter((s) => alreadyOccupied.has(s.toUpperCase().trim()));
+      if (conflicting.length > 0) {
+        const err = new Error(`SEAT_CONFLICT: Seat(s) ${conflicting.join(', ')} are already booked for this session.`);
+        (err as any).status = 409;
+        (err as any).conflictingSeats = conflicting;
+        throw err;
+      }
+    }
+
     const bookingId =
       data.id ||
       `#CS-${Math.floor(1000 + Math.random() * 9000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
@@ -183,8 +313,8 @@ export const createBookingInDb = async (data: CreateBookingInput) => {
         await prisma.customer.updateMany({
           where: {
             OR: [
-              ...(data.userId ? [{ id: data.userId }] : []),
-              ...(data.customerName ? [{ name: data.customerName }] : []),
+              ...(data.userId ? [{ id: data.userId }, { email: data.userId.toLowerCase() }] : []),
+              ...(data.customerName ? [{ name: data.customerName }, { email: data.customerName.toLowerCase() }] : []),
             ],
           },
           data: {
@@ -210,7 +340,9 @@ export const createBookingInDb = async (data: CreateBookingInput) => {
     cachedLedger = null;
     return created;
   } catch (err: any) {
-    console.error('[bookingService] Error creating booking in DB:', err);
+    if (err?.status !== 409) {
+      console.error('[bookingService] Error creating booking in DB:', err);
+    }
     throw err;
   }
 };

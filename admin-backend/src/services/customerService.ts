@@ -18,19 +18,50 @@ export const getAllCustomers = async (): Promise<CustomerAccount[]> => {
   const dbCustomers = await prisma.customer.findMany({
     orderBy: { createdAt: 'desc' },
   });
-  return dbCustomers.map((c) => ({
-    id: c.id,
-    name: c.name,
-    email: c.email.toLowerCase(),
-    phone: c.phone || '',
-    password: c.password || '',
-    avatarUrl: (c as any).avatarUrl || '',
-    role: 'Customer',
-    status: (c.status === 'Suspended' ? 'Suspended' : 'Active') as 'Active' | 'Suspended',
-    joinDate: c.joinDate || new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-    bookingCount: c.bookingCount || 0,
-    createdAt: c.createdAt.toISOString(),
-  }));
+
+  // Calculate actual booking counts from Booking table
+  const bookingsByUser: Record<string, number> = {};
+  try {
+    const allBookings = await prisma.booking.findMany({
+      select: { userId: true, customerName: true },
+    });
+    for (const b of allBookings) {
+      if (b.userId) {
+        bookingsByUser[b.userId.toLowerCase()] = (bookingsByUser[b.userId.toLowerCase()] || 0) + 1;
+      }
+      if (b.customerName) {
+        bookingsByUser[b.customerName.toLowerCase()] = (bookingsByUser[b.customerName.toLowerCase()] || 0) + 1;
+      }
+    }
+  } catch (err) {
+    console.warn('[customerService] Error counting customer bookings:', err);
+  }
+
+  return dbCustomers.map((c) => {
+    const emailKey = c.email.toLowerCase();
+    const idKey = c.id.toLowerCase();
+    const nameKey = c.name.toLowerCase();
+    const dynamicCount = Math.max(
+      c.bookingCount || 0,
+      bookingsByUser[emailKey] || 0,
+      bookingsByUser[idKey] || 0,
+      bookingsByUser[nameKey] || 0
+    );
+
+    return {
+      id: c.id,
+      name: c.name,
+      email: c.email.toLowerCase(),
+      phone: c.phone || '',
+      password: c.password || '',
+      avatarUrl: (c as any).avatarUrl || '',
+      role: 'Customer',
+      status: (c.status === 'Suspended' ? 'Suspended' : 'Active') as 'Active' | 'Suspended',
+      joinDate: c.joinDate || new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      bookingCount: dynamicCount,
+      createdAt: c.createdAt.toISOString(),
+    };
+  });
 };
 
 export const findCustomerByEmail = async (email: string): Promise<CustomerAccount | undefined> => {

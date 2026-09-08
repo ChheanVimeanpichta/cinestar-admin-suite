@@ -12,6 +12,40 @@ interface MovieFormModalProps {
 
 const badgeOptions = ["IMAX", "4DX", "CineStar", "DOLBY", "2D"];
 
+const genreOptions = [
+  "Action",
+  "Action / Adventure",
+  "Action / Crime",
+  "Action / Sci-Fi",
+  "Adventure",
+  "Animation",
+  "Animation / Family",
+  "Animation / Sci-Fi",
+  "Comedy",
+  "Comedy / Romance",
+  "Crime",
+  "Crime / Thriller",
+  "Documentary",
+  "Drama",
+  "Drama / Music",
+  "Drama / Romance",
+  "Family",
+  "Fantasy",
+  "Fantasy / Adventure",
+  "Horror",
+  "Horror / Thriller",
+  "Music / Musical",
+  "Mystery",
+  "Romance",
+  "Sci-Fi",
+  "Sci-Fi / Action",
+  "Sci-Fi / Thriller",
+  "Thriller",
+  "War",
+  "War / Drama",
+  "Western",
+];
+
 export default function MovieFormModal({ open, onClose, onSave, editMovie, isSaving = false }: MovieFormModalProps) {
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
@@ -179,13 +213,22 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
               <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
                 Genre
               </label>
-              <input
-                type="text"
+              <select
                 value={genre}
                 onChange={(e) => setGenre(e.target.value)}
-                placeholder="Action/Sci-Fi"
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
-              />
+                required
+                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer [color-scheme:dark]"
+              >
+                <option value="" className="bg-[#141414] text-onSurfaceVariant">Select genre...</option>
+                {genre && !genreOptions.includes(genre) && (
+                  <option value={genre} className="bg-[#141414] text-onSurface">{genre}</option>
+                )}
+                {genreOptions.map((g) => (
+                  <option key={g} value={g} className="bg-[#141414] text-onSurface">
+                    {g}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
