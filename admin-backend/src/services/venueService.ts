@@ -24,15 +24,37 @@ export const getAllVenues = async (): Promise<TheaterVenue[]> => {
     });
 
     if (dbVenues.length > 0) {
-      cachedVenues = dbVenues.map((v) => ({
-        id: v.id,
-        name: v.name,
-        address: v.address,
-        imageUrl: v.imageUrl,
-        status: (v.status as 'Active' | 'Maintenance') || 'Active',
-        hallCount: v.halls.length,
-        capacity: v.halls.reduce((sum, h) => sum + (h.capacity || 0), 0),
-      }));
+      cachedVenues = dbVenues.map((v) => {
+        const formats = Array.from(new Set(v.halls.map((h) => h.screenType).filter(Boolean)));
+        const tags = Array.from(
+          new Set([
+            ...formats,
+            ...v.halls.map((h) => (h.soundSystem === 'Dolby Atmos' ? 'DOLBY_ATMOS' : '')),
+            'GOLD_CLASS',
+          ])
+        ).filter(Boolean);
+
+        return {
+          id: v.id,
+          name: v.name,
+          address: v.address,
+          imageUrl: v.imageUrl,
+          status: (v.status as 'Active' | 'Maintenance') || 'Active',
+          hallCount: v.halls.length,
+          capacity: v.halls.reduce((sum, h) => sum + (h.capacity || 0), 0),
+          formats,
+          tags,
+          halls: v.halls.map((h) => ({
+            id: h.id,
+            venueId: h.venueId,
+            name: h.name,
+            screenType: h.screenType,
+            soundSystem: h.soundSystem,
+            capacity: h.capacity,
+            status: h.status,
+          })),
+        };
+      });
       lastVenuesFetchTime = now;
       return cachedVenues;
     }

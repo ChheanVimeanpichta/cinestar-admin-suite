@@ -16,7 +16,7 @@ router.use('/auth', authRoutes);
 router.use('/customers', customerRoutes);
 router.use('/dashboard', adminAuthMiddleware, dashboardRoutes);
 router.use('/movies', movieRoutes);
-router.use('/theaters', adminAuthMiddleware, theaterRoutes);
+router.use('/theaters', theaterRoutes);
 router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
 router.use('/screenings', adminAuthMiddleware, screeningRoutes);
 router.use('/bookings', bookingRoutes);

@@ -11,19 +11,21 @@ import {
   deleteHallHandler,
   getStats,
 } from '../controllers/theaterController.js';
+import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
 const router = Router();
 router.get('/stats', getStats);
 router.get('/venues', listVenues);
-router.post('/venues', createVenueHandler);
-router.put('/venues/:id', updateVenueHandler);
-router.delete('/venues/:id', deleteVenueHandler);
-
 router.get('/venues/:venueId/halls', listVenueHalls);
-router.post('/venues/:venueId/halls', createHallHandler);
-router.put('/halls/:hallId', updateHallHandler);
-router.delete('/halls/:hallId', deleteHallHandler);
-
 router.get('/', listTheaters);
+
+// Protected mutation routes (Admin & Staff authorized)
+router.post('/venues', adminAuthMiddleware, createVenueHandler);
+router.put('/venues/:id', adminAuthMiddleware, updateVenueHandler);
+router.delete('/venues/:id', adminAuthMiddleware, deleteVenueHandler);
+
+router.post('/venues/:venueId/halls', adminAuthMiddleware, createHallHandler);
+router.put('/halls/:hallId', adminAuthMiddleware, updateHallHandler);
+router.delete('/halls/:hallId', adminAuthMiddleware, deleteHallHandler);
 
 export default router;
