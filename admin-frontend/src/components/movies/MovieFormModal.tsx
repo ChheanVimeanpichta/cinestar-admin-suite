@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { X, Upload, Calendar } from "lucide-react";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { X, Upload, Calendar, ChevronDown, Check, Plus, Tag } from "lucide-react";
 import { Movie } from "../../types";
 
 interface MovieFormModalProps {
@@ -49,6 +49,11 @@ const genreOptions = [
 export default function MovieFormModal({ open, onClose, onSave, editMovie, isSaving = false }: MovieFormModalProps) {
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
+  const [genreSearch, setGenreSearch] = useState("");
+  const [isGenreOpen, setIsGenreOpen] = useState(false);
+  const [customGenres, setCustomGenres] = useState<string[]>([]);
+  const genreDropdownRef = useRef<HTMLDivElement>(null);
+
   const [score, setScore] = useState<number | null>(null);
   const [synopsis, setSynopsis] = useState("");
   const [poster, setPoster] = useState("");
@@ -61,6 +66,8 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
   const resetForm = () => {
     setTitle("");
     setGenre("");
+    setGenreSearch("");
+    setIsGenreOpen(false);
     setScore(null);
     setSynopsis("");
     setPoster("");
@@ -73,16 +80,65 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
     if (editMovie) {
       setTitle(editMovie.title);
       setGenre(editMovie.genre);
+      setGenreSearch(editMovie.genre);
+      setIsGenreOpen(false);
       setScore(editMovie.score);
       setSynopsis(editMovie.synopsis);
       setPoster(editMovie.poster);
       setBadge(editMovie.badge || "");
       setReleaseDate(editMovie.releaseDate || "");
       setHasBookBtn(editMovie.hasBookBtn || false);
+      if (editMovie.genre && !genreOptions.includes(editMovie.genre)) {
+        setCustomGenres((prev) => Array.from(new Set([...prev, editMovie.genre])));
+      }
     } else {
       resetForm();
     }
   }, [editMovie, open]);
+
+  // Click outside listener for the genre dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        genreDropdownRef.current &&
+        !genreDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsGenreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const allGenreOptions = useMemo(() => {
+    const combined = [...customGenres, ...genreOptions];
+    return Array.from(new Set(combined));
+  }, [customGenres]);
+
+  const filteredGenres = useMemo(() => {
+    const q = genreSearch.trim().toLowerCase();
+    if (!q) return allGenreOptions;
+    return allGenreOptions.filter((g) => g.toLowerCase().includes(q));
+  }, [allGenreOptions, genreSearch]);
+
+  const hasExactMatch = allGenreOptions.some(
+    (g) => g.toLowerCase() === genreSearch.trim().toLowerCase()
+  );
+
+  const handleSelectGenre = (selected: string) => {
+    setGenre(selected);
+    setGenreSearch(selected);
+    setIsGenreOpen(false);
+    if (!allGenreOptions.includes(selected)) {
+      setCustomGenres((prev) => [selected, ...prev]);
+    }
+  };
+
+  const handleAddCustomGenre = () => {
+    const trimmed = genreSearch.trim();
+    if (!trimmed) return;
+    handleSelectGenre(trimmed);
+  };
 
   if (!open) return null;
 
@@ -209,26 +265,146 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
                 className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
               />
             </div>
-            <div className="sm:col-span-2">
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
-                Genre
-              </label>
-              <select
-                value={genre}
-                onChange={(e) => setGenre(e.target.value)}
-                required
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer [color-scheme:dark]"
-              >
-                <option value="" className="bg-[#141414] text-onSurfaceVariant">Select genre...</option>
-                {genre && !genreOptions.includes(genre) && (
-                  <option value={genre} className="bg-[#141414] text-onSurface">{genre}</option>
+            <div className="sm:col-span-2 relative" ref={genreDropdownRef}>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant">
+                  Genre
+                </label>
+                {genre && (
+                  <span className="text-[10px] font-mono text-accent truncate max-w-[120px]" title={genre}>
+                    {genre}
+                  </span>
                 )}
-                {genreOptions.map((g) => (
-                  <option key={g} value={g} className="bg-[#141414] text-onSurface">
-                    {g}
-                  </option>
-                ))}
-              </select>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={genreSearch}
+                  onChange={(e) => {
+                    setGenreSearch(e.target.value);
+                    setGenre(e.target.value);
+                    if (!isGenreOpen) setIsGenreOpen(true);
+                  }}
+                  onFocus={() => setIsGenreOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (filteredGenres.length > 0 && !hasExactMatch && genreSearch.trim()) {
+                        handleAddCustomGenre();
+                      } else if (filteredGenres.length > 0) {
+                        handleSelectGenre(filteredGenres[0]);
+                      } else if (genreSearch.trim()) {
+                        handleAddCustomGenre();
+                      }
+                    } else if (e.key === "Escape") {
+                      setIsGenreOpen(false);
+                    }
+                  }}
+                  required={!genre}
+                  placeholder="Search or type custom genre..."
+                  className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 pr-16 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
+                />
+
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  {genreSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGenreSearch("");
+                        setGenre("");
+                      }}
+                      className="p-1 rounded text-onSurfaceVariant hover:text-onSurface transition-colors"
+                      title="Clear genre"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsGenreOpen(!isGenreOpen)}
+                    className="p-1 rounded text-onSurfaceVariant hover:text-onSurface transition-colors"
+                  >
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-200 ${
+                        isGenreOpen ? "rotate-180 text-accent" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Dropdown Menu */}
+              {isGenreOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-lg border border-white/15 bg-[#18181b] shadow-[0_12px_32px_rgba(0,0,0,0.65)] backdrop-blur-md overflow-hidden">
+                  {/* Custom option prompt if query doesn't match an existing preset */}
+                  {genreSearch.trim() && !hasExactMatch && (
+                    <div className="border-b border-white/10 p-2 bg-accent/5">
+                      <button
+                        type="button"
+                        onClick={handleAddCustomGenre}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded text-xs font-medium text-accent hover:bg-accent/15 transition-colors text-left"
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <Plus size={14} className="shrink-0" />
+                          <span>Use custom: <span className="font-bold underline">"{genreSearch.trim()}"</span></span>
+                        </span>
+                        <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0">
+                          Custom
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* List of matching genres */}
+                  <div className="max-h-56 overflow-y-auto divide-y divide-white/5 py-1">
+                    {filteredGenres.length > 0 ? (
+                      filteredGenres.map((g) => {
+                        const isSelected = genre.toLowerCase() === g.toLowerCase();
+                        const isCustom = !genreOptions.includes(g);
+                        return (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => handleSelectGenre(g)}
+                            className={`w-full flex items-center justify-between px-3.5 py-2 text-xs text-left transition-colors ${
+                              isSelected
+                                ? "bg-accent/20 text-accent font-bold"
+                                : "text-onSurface hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2 truncate">
+                              <Tag size={12} className={isSelected ? "text-accent" : "text-onSurfaceVariant"} />
+                              <span className="truncate">{g}</span>
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {isCustom && (
+                                <span className="text-[9px] font-mono px-1 rounded bg-white/10 text-onSurfaceVariant">
+                                  custom
+                                </span>
+                              )}
+                              {isSelected && <Check size={14} className="text-accent" />}
+                            </div>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-3 text-center text-xs text-onSurfaceVariant">
+                        <p>No preset found for "{genreSearch}"</p>
+                        <button
+                          type="button"
+                          onClick={handleAddCustomGenre}
+                          className="mt-1.5 inline-flex items-center gap-1 text-accent font-semibold hover:underline"
+                        >
+                          <Plus size={13} />
+                          Add as custom genre
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
