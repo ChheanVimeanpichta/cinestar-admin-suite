@@ -59,7 +59,7 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
   const [poster, setPoster] = useState("");
   const [badge, setBadge] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
-  const [hasBookBtn, setHasBookBtn] = useState(false);
+  const [hasBookBtn, setHasBookBtn] = useState(true);
 
   const isEditing = !!editMovie;
 
@@ -73,7 +73,7 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
     setPoster("");
     setBadge("");
     setReleaseDate("");
-    setHasBookBtn(false);
+    setHasBookBtn(true);
   };
 
   useEffect(() => {
@@ -124,6 +124,26 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
   const hasExactMatch = allGenreOptions.some(
     (g) => g.toLowerCase() === genreSearch.trim().toLowerCase()
   );
+
+  const isUpcoming = useMemo(() => {
+    if (!releaseDate) return false;
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const parts = releaseDate.split("-");
+      let target: Date;
+      if (parts.length === 3) {
+        target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      } else {
+        target = new Date(releaseDate);
+      }
+      if (!isNaN(target.getTime())) {
+        target.setHours(0, 0, 0, 0);
+        return target.getTime() > today.getTime();
+      }
+    } catch {}
+    return false;
+  }, [releaseDate]);
 
   const handleSelectGenre = (selected: string) => {
     setGenre(selected);
@@ -441,9 +461,22 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
               </select>
             </div>
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2 flex items-center gap-1.5">
-                <Calendar size={12} />
-                Release Date
+              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Calendar size={12} />
+                  Release Date
+                </span>
+                {releaseDate && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                      isUpcoming
+                        ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30"
+                        : "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
+                    }`}
+                  >
+                    {isUpcoming ? "Coming Soon" : "Now Showing"}
+                  </span>
+                )}
               </label>
               <input
                 type="date"
@@ -483,9 +516,18 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
                 }`}
               />
             </button>
-            <span className="font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant">
-              Enable Book Now button
-            </span>
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] uppercase tracking-wide text-onSurface">
+                Enable Book Now button
+              </span>
+              <span className="text-[11px] text-onSurfaceVariant">
+                {isUpcoming
+                  ? "Movie is Coming Soon (releases in the future). Once release date arrives, online booking activates."
+                  : hasBookBtn
+                    ? "Active for booking — displays under Now Showing in customer UI"
+                    : "Booking disabled"}
+              </span>
+            </div>
           </div>
 
           {/* Actions */}

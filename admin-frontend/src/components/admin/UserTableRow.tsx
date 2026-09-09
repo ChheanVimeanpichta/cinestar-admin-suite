@@ -30,13 +30,15 @@ interface UserTableRowProps {
 
 export default function UserTableRow({
   user,
-  currentUserIsAdmin = true,
+  currentUserIsAdmin = false,
   onEdit,
   onDelete,
   onReactivate,
 }: UserTableRowProps) {
   const isSuspended = user.status === "Suspended";
   const isPrimaryAdmin = user.email.toLowerCase() === "admin@gmail.com";
+  // Admin can manage all roles. Staff can ONLY manage Customer accounts.
+  const canManage = currentUserIsAdmin || user.role === "Customer";
 
   return (
     <tr
@@ -94,7 +96,7 @@ export default function UserTableRow({
       <td className="pr-4 text-onSurface text-sm font-mono">{user.bookingCount}</td>
       <td className="pr-6 text-right">
         <div className="flex items-center justify-end gap-1.5">
-          {currentUserIsAdmin ? (
+          {canManage ? (
             <>
               <button
                 onClick={() => onEdit?.(user)}

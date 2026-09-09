@@ -28,6 +28,26 @@ function formatDate(iso?: string) {
   });
 }
 
+export function isMovieUpcoming(releaseDate?: string) {
+  if (!releaseDate) return false;
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const parts = releaseDate.split("-");
+    let target: Date;
+    if (parts.length === 3) {
+      target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    } else {
+      target = new Date(releaseDate);
+    }
+    if (!isNaN(target.getTime())) {
+      target.setHours(0, 0, 0, 0);
+      return target.getTime() > today.getTime();
+    }
+  } catch {}
+  return false;
+}
+
 function ActionMenu({
   movie,
   onEdit,
@@ -116,6 +136,7 @@ export default function MovieTable({
             )}
             <th className="px-4 py-3 font-medium">Title</th>
             <th className="px-4 py-3 font-medium">Genre</th>
+            <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium">Runtime</th>
             <th className="px-4 py-3 font-medium">Score</th>
             <th className="px-4 py-3 font-medium">Badge</th>
@@ -176,6 +197,17 @@ export default function MovieTable({
                     <span className="text-onSurfaceVariant">{"\u2014"}</span>
                   )}
                 </div>
+              </td>
+              <td className="px-4 py-3 align-top">
+                {isMovieUpcoming(movie.releaseDate) ? (
+                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20">
+                    Coming Soon
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+                    Now Showing
+                  </span>
+                )}
               </td>
               <td className="px-4 py-3 align-top text-onSurface">
                 {formatRuntime(movie.durationMins)}

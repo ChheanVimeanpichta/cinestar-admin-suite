@@ -11,7 +11,12 @@ export const listAllShowtimes = async (_req: Request, res: Response) => {
   res.json(await getScreenings());
 };
 
-export const createShowtime = (_req: Request, res: Response) => {
+export const createShowtime = (req: Request, res: Response) => {
+  const requesterRole = (req as any).admin?.role;
+  if (requesterRole !== 'admin') {
+    res.status(403).json({ message: 'Only administrators can create or add showtimes' });
+    return;
+  }
   res.status(201).json({ message: 'Showtime created' });
 };
 

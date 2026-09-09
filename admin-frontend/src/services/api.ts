@@ -9,7 +9,7 @@ function buildUrl(path: string): string {
 }
 
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem("cinestar_admin_token");
+  const token = typeof window !== "undefined" ? sessionStorage.getItem("cinestar_admin_token") : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Search,
-  Download,
   Plus,
   SlidersHorizontal,
   ChevronLeft,
@@ -26,7 +25,7 @@ import {
 } from "../../services/movieApi";
 import { fetchInventoryStats } from "../../services/dashboardApi";
 import MovieFormModal from "../../components/movies/MovieFormModal";
-import MovieTable from "../../components/movies/MovieTable";
+import MovieTable, { isMovieUpcoming } from "../../components/movies/MovieTable";
 import { mockMovies } from "../../mocks/movies";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 
@@ -54,6 +53,7 @@ export default function MovieManagement() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterBadge, setFilterBadge] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"" | "now-showing" | "coming-soon">("");
   const [query, setQuery] = useState(initialSearch);
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -134,9 +134,13 @@ export default function MovieManagement() {
         if (!genres.some((g) => g.includes(filterGenre.toLowerCase())))
           return false;
       }
+      if (filterStatus === "coming-soon" && !isMovieUpcoming(m.releaseDate))
+        return false;
+      if (filterStatus === "now-showing" && isMovieUpcoming(m.releaseDate))
+        return false;
       return true;
     });
-  }, [movies, query, filterBadge, filterGenre]);
+  }, [movies, query, filterBadge, filterGenre, filterStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginatedMovies = filtered.slice(
@@ -156,7 +160,7 @@ export default function MovieManagement() {
 
   useEffect(() => {
     setPage(1);
-  }, [query, filterBadge, filterGenre]);
+  }, [query, filterBadge, filterGenre, filterStatus]);
 
   const handleSave = async (movieData: Movie) => {
     try {
@@ -270,16 +274,6 @@ export default function MovieManagement() {
     }
   };
 
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(movies, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `movies-export-${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
   const allOnPageSelected =
     paginatedMovies.length > 0 &&
     paginatedMovies.every((m) => selectedIds.has(m.id));
@@ -312,13 +306,6 @@ export default function MovieManagement() {
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-accent" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
-            </button>
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-4 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10"
-            >
-              <Download className="h-4 w-4" />
-              Export
             </button>
             {isAdmin ? (
               <button
@@ -411,12 +398,68 @@ export default function MovieManagement() {
                 </button>
               </span>
             )}
+            {filterStatus && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium ring-1 ring-inset ${
+                  filterStatus === "now-showing"
+                    ? "bg-emerald-500/20 text-emerald-400 ring-emerald-500/40"
+                    : "bg-cyan-500/20 text-cyan-400 ring-cyan-500/40"
+                }`}
+              >
+                {filterStatus === "now-showing" ? "Now Showing" : "Coming Soon"}
+                <button onClick={() => setFilterStatus("")}>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
           </div>
         </div>
 
         {/* Filter bar */}
         {showFilter && (
           <div className="mb-4 flex flex-wrap items-center gap-3 p-4 rounded-xl border border-white/10 bg-surface-variant/60">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
+                Status:
+              </span>
+              <div className="flex gap-1 flex-wrap">
+                <button
+                  onClick={() => setFilterStatus("")}
+                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
+                    !filterStatus
+                      ? "bg-red-600/20 text-red-400 ring-1 ring-inset ring-red-600/40"
+                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() =>
+                    setFilterStatus(filterStatus === "now-showing" ? "" : "now-showing")
+                  }
+                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
+                    filterStatus === "now-showing"
+                      ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-inset ring-emerald-500/40"
+                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
+                  }`}
+                >
+                  Now Showing
+                </button>
+                <button
+                  onClick={() =>
+                    setFilterStatus(filterStatus === "coming-soon" ? "" : "coming-soon")
+                  }
+                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
+                    filterStatus === "coming-soon"
+                      ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-inset ring-cyan-500/40"
+                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
+                  }`}
+                >
+                  Coming Soon
+                </button>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
                 Badge:
@@ -466,11 +509,12 @@ export default function MovieManagement() {
               </select>
             </div>
 
-            {(filterBadge || filterGenre) && (
+            {(filterBadge || filterGenre || filterStatus) && (
               <button
                 onClick={() => {
                   setFilterBadge("");
                   setFilterGenre("");
+                  setFilterStatus("");
                 }}
                 className="ml-auto px-3 py-1.5 rounded text-xs text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant transition-colors"
               >

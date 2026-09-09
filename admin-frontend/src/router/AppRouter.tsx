@@ -27,10 +27,22 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function RootRedirect() {
+  const { isAuthenticated, isLoading } = useAdminAuth();
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-surface text-onSurfaceVariant font-mono text-sm uppercase tracking-widest">
+        Loading...
+      </div>
+    );
+  }
+  return <Navigate to={isAuthenticated ? "/admin" : "/login"} replace />;
+}
+
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/admin" replace />,
+    element: <RootRedirect />,
   },
   {
     path: "/login",
@@ -78,7 +90,7 @@ const router = createBrowserRouter([
   },
   {
     path: "*",
-    element: <Navigate to="/admin" replace />,
+    element: <RootRedirect />,
   },
 ]);
 

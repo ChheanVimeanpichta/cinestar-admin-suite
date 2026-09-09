@@ -3,11 +3,34 @@ import { apiGet, apiPost } from "./api";
 
 const TOKEN_KEY = "cinestar_admin_token";
 
-export const getStoredToken = (): string | null => localStorage.getItem(TOKEN_KEY);
+// Security: purge any legacy persistent token from localStorage
+if (typeof window !== "undefined") {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Ignore storage access errors
+  }
+}
 
-export const storeToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
+export const getStoredToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(TOKEN_KEY);
+};
 
-export const clearStoredToken = () => localStorage.removeItem(TOKEN_KEY);
+export const storeToken = (token: string) => {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(TOKEN_KEY, token);
+};
+
+export const clearStoredToken = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(TOKEN_KEY);
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Ignore storage access errors
+  }
+};
 
 export function loginAdmin(email: string, password: string): Promise<AuthResponse> {
   return apiPost<AuthResponse>("/auth/login", { email, password });

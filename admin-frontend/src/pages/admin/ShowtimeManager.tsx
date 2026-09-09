@@ -20,6 +20,7 @@ import ShowtimeRow, { ShowtimeRowData } from "../../components/admin/ShowtimeRow
 import ShowtimeFormModal from "../../components/showtimes/ShowtimeFormModal";
 import { allShowtimeRows } from "../../mocks/showtimes";
 import { mockMovies } from "../../mocks/movies";
+import { useAdminAuth } from "../../context/AdminAuthContext";
 
 const STORAGE_KEY = "cinestar_admin_static_showtimes_v1";
 
@@ -35,6 +36,9 @@ function loadInitialShowtimes(): ShowtimeRowData[] {
 }
 
 export default function ShowtimeManager() {
+  const { admin } = useAdminAuth();
+  const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
+
   const [view, setView] = useState<"table" | "calendar">("table");
   const [allShowtimes, setAllShowtimes] = useState<ShowtimeRowData[]>(loadInitialShowtimes);
   const [page, setPage] = useState(1);
@@ -148,6 +152,7 @@ export default function ShowtimeManager() {
   }
 
   function handleBulkEdit() {
+    if (!isAdmin) return;
     if (selectedIds.size === 1) {
       const selected = allShowtimes.find((r) => selectedIds.has(r.id));
       if (selected) {
@@ -159,6 +164,7 @@ export default function ShowtimeManager() {
   }
 
   function handleBulkDelete() {
+    if (!isAdmin) return;
     if (window.confirm(`Delete ${selectedIds.size} selected showtime(s)?`)) {
       setAllShowtimes((prev) => prev.filter((r) => !selectedIds.has(r.id)));
       setSelectedIds(new Set());
@@ -166,16 +172,19 @@ export default function ShowtimeManager() {
   }
 
   function handleAddShowtime() {
+    if (!isAdmin) return;
     setEditingShowtime(null);
     setShowModal(true);
   }
 
   function handleEditRow(data: ShowtimeRowData) {
+    if (!isAdmin) return;
     setEditingShowtime(data);
     setShowModal(true);
   }
 
   function handleSaveShowtime(data: ShowtimeRowData) {
+    if (!isAdmin) return;
     if (editingShowtime) {
       setAllShowtimes((prev) => prev.map((r) => (r.id === data.id ? data : r)));
     } else {
@@ -186,6 +195,7 @@ export default function ShowtimeManager() {
   }
 
   function handleDeleteRow(data: ShowtimeRowData) {
+    if (!isAdmin) return;
     if (window.confirm(`Delete showtime for "${data.title}" at ${data.time}?`)) {
       setAllShowtimes((prev) => prev.filter((r) => r.id !== data.id));
     }
@@ -222,12 +232,21 @@ export default function ShowtimeManager() {
       {/* Page header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
-            <CalendarIcon size={30} className="text-accent" />
-            Showtimes
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
+              <CalendarIcon size={30} className="text-accent" />
+              Showtimes
+            </h1>
+            {!isAdmin && (
+              <span className="px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
+                Staff (View-Only)
+              </span>
+            )}
+          </div>
           <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
-            Manage scheduling, resolve conflicts, and optimize hall utilization across all venues.
+            {isAdmin
+              ? "Manage scheduling, resolve conflicts, and optimize hall utilization across all venues."
+              : "View scheduled showtimes, calendar, and hall availability. Showtime creation and scheduling are restricted to Administrators."}
           </p>
         </div>
 
@@ -253,13 +272,15 @@ export default function ShowtimeManager() {
             </button>
           </div>
 
-          <button
-            onClick={handleAddShowtime}
-            className="flex items-center gap-2 px-5 py-2.5 rounded bg-accent text-onSurface text-sm font-body font-semibold hover:brightness-110 transition shadow"
-          >
-            <Plus size={15} />
-            Add Showtime
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleAddShowtime}
+              className="flex items-center gap-2 px-5 py-2.5 rounded bg-accent text-onSurface text-sm font-body font-semibold hover:brightness-110 transition shadow"
+            >
+              <Plus size={15} />
+              Add Showtime
+            </button>
+          )}
         </div>
       </div>
 
@@ -337,7 +358,7 @@ export default function ShowtimeManager() {
       </div>
 
       {/* Selection action bar */}
-      {selectedIds.size > 0 && (
+      {isAdmin && selectedIds.size > 0 && (
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-600/30 bg-red-600/10 px-4 py-3">
           <span className="text-sm font-medium text-red-300">
             {selectedIds.size} selected
@@ -374,16 +395,20 @@ export default function ShowtimeManager() {
             <thead>
               <tr className="border-b border-white/10 text-onSurfaceVariant text-xs font-mono uppercase tracking-wider">
                 <th className="py-3 pl-6 w-12">
-                  <button
-                    onClick={toggleSelectAll}
-                    className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-                      allOnPageSelected
-                        ? "border-accent bg-accent text-onSurface"
-                        : "border-white/20 bg-surface-variant hover:border-white/40"
-                    }`}
-                  >
-                    {allOnPageSelected && <Check className="h-3 w-3" />}
-                  </button>
+                  {isAdmin ? (
+                    <button
+                      onClick={toggleSelectAll}
+                      className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
+                        allOnPageSelected
+                          ? "border-accent bg-accent text-onSurface"
+                          : "border-white/20 bg-surface-variant hover:border-white/40"
+                      }`}
+                    >
+                      {allOnPageSelected && <Check className="h-3 w-3" />}
+                    </button>
+                  ) : (
+                    <span className="text-white/20 text-xs font-mono">•</span>
+                  )}
                 </th>
                 <th className="py-3 font-medium">Movie</th>
                 <th className="font-medium">Theater &amp; Hall</th>
@@ -398,10 +423,10 @@ export default function ShowtimeManager() {
                 <ShowtimeRow
                   key={row.id}
                   data={row}
-                  selected={selectedIds.has(row.id)}
-                  onToggleSelect={() => toggleSelect(row.id)}
-                  onEdit={handleEditRow}
-                  onDelete={handleDeleteRow}
+                  selected={isAdmin && selectedIds.has(row.id)}
+                  onToggleSelect={isAdmin ? () => toggleSelect(row.id) : undefined}
+                  onEdit={isAdmin ? handleEditRow : undefined}
+                  onDelete={isAdmin ? handleDeleteRow : undefined}
                 />
               ))}
               {paginatedRows.length === 0 && (
@@ -501,31 +526,35 @@ export default function ShowtimeManager() {
                   </div>
 
                   <div className="flex flex-col gap-2 flex-1">
-                    {dayShows.map((show) => (
-                      <button
-                        key={show.id}
-                        type="button"
-                        onClick={() => handleEditRow(show)}
-                        className="p-2 rounded-lg bg-surface border border-white/10 hover:border-accent text-left transition group"
-                      >
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="text-xs font-mono font-bold text-accent flex items-center gap-1">
-                            <Clock size={11} />
-                            {show.time}
-                          </span>
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white/10 text-onSurfaceVariant uppercase">
-                            {show.format}
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold text-onSurface truncate group-hover:text-accent transition-colors">
-                          {show.title}
-                        </p>
-                        <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1">
-                          <Film size={10} />
-                          {show.hall || show.theaterName} • {show.seatsFilled}/{show.seatsTotal}
-                        </p>
-                      </button>
-                    ))}
+                    {dayShows.map((show) => {
+                      const CardWrapper = isAdmin ? "button" : "div";
+                      return (
+                        <CardWrapper
+                          key={show.id}
+                          {...(isAdmin ? { type: "button", onClick: () => handleEditRow(show) } : {})}
+                          className={`p-2 rounded-lg bg-surface border border-white/10 text-left transition ${
+                            isAdmin ? "hover:border-accent group cursor-pointer" : "cursor-default"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-xs font-mono font-bold text-accent flex items-center gap-1">
+                              <Clock size={11} />
+                              {show.time}
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white/10 text-onSurfaceVariant uppercase">
+                              {show.format}
+                            </span>
+                          </div>
+                          <p className={`text-xs font-semibold text-onSurface truncate ${isAdmin ? "group-hover:text-accent transition-colors" : ""}`}>
+                            {show.title}
+                          </p>
+                          <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1">
+                            <Film size={10} />
+                            {show.hall || show.theaterName} • {show.seatsFilled}/{show.seatsTotal}
+                          </p>
+                        </CardWrapper>
+                      );
+                    })}
                     {dayShows.length === 0 && (
                       <div className="flex-1 flex items-center justify-center text-center p-3 text-[11px] text-onSurfaceVariant">
                         No screenings
@@ -541,7 +570,7 @@ export default function ShowtimeManager() {
 
       {/* Add / Edit Showtime Modal */}
       <ShowtimeFormModal
-        open={showModal}
+        open={showModal && isAdmin}
         onClose={() => {
           setShowModal(false);
           setEditingShowtime(null);

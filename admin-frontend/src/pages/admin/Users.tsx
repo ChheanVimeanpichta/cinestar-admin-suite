@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, Download, RefreshCw, UserPlus, X, AlertTriangle, Upload, Camera, Trash2 } from "lucide-react";
+import { Search, RefreshCw, UserPlus, X, AlertTriangle, Upload, Camera, Trash2 } from "lucide-react";
 import { AdminUserRecord, GrowthMetricPoint, UserRole, UserAccountStatus } from "../../types";
 import {
   fetchUserManagementStats,
@@ -26,6 +26,7 @@ export default function Users() {
   const [statusFilter, setStatusFilter] = useState<UserAccountStatus | "All">("All");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Edit User State
   const [editingUser, setEditingUser] = useState<AdminUserRecord | null>(null);
@@ -51,13 +52,32 @@ export default function Users() {
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
   const createFileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadData = () => {
-    fetchUserManagementStats().then((s) => setTotalUsers(s.totalUsers));
-    fetchUserGrowthMetrics().then(setGrowth);
-    fetchUsers({ role: roleFilter, status: statusFilter, search, page }).then((res) => {
-      setUsers(res.records);
-      setFilteredTotal(res.total);
-    });
+  const loadData = async () => {
+    try {
+      const [stats, growthData, usersData] = await Promise.all([
+        fetchUserManagementStats(),
+        fetchUserGrowthMetrics(),
+        fetchUsers({ role: roleFilter, status: statusFilter, search, page }),
+      ]);
+      setTotalUsers(stats.totalUsers);
+      setGrowth(growthData);
+      setUsers(usersData.records);
+      setFilteredTotal(usersData.total);
+    } catch (err) {
+      console.error("Failed to load user data:", err);
+    }
+  };
+
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await loadData();
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
+    }
   };
 
   useEffect(() => {
@@ -139,6 +159,10 @@ export default function Users() {
   };
 
   const handleOpenEdit = (user: AdminUserRecord) => {
+    if (!isAdmin && user.role !== "Customer") {
+      alert("Staff members can only edit Customer accounts.");
+      return;
+    }
     setEditingUser(user);
     setEditName(user.name);
     setEditEmail(user.email);
@@ -149,6 +173,10 @@ export default function Users() {
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    if (!isAdmin && editingUser.role !== "Customer") {
+      setEditError("Staff members can only edit Customer accounts.");
+      return;
+    }
     setIsSubmittingEdit(true);
     setEditError("");
     try {
@@ -180,11 +208,19 @@ export default function Users() {
   };
 
   const handleOpenDelete = (user: AdminUserRecord) => {
+    if (!isAdmin && user.role !== "Customer") {
+      alert("Staff members can only disable Customer accounts.");
+      return;
+    }
     setDeletingUser(user);
     setDeleteError("");
   };
 
   const handleReactivateUser = async (user: AdminUserRecord) => {
+    if (!isAdmin && user.role !== "Customer") {
+      alert("Staff members can only reactivate Customer accounts.");
+      return;
+    }
     try {
       await updateAdminUser(user.id, { status: "Active" });
       setUsers((prev) =>
@@ -252,19 +288,23 @@ export default function Users() {
             <h1 className="font-heading font-black text-4xl uppercase text-onSurface leading-none">
               User<br />Management
             </h1>
-            {!isAdmin && (
-              <span className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
-                Staff (Read-Only)
-              </span>
-            )}
+            <span className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+              isAdmin
+                ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+            }`}>
+              {isAdmin ? "Admin (All Roles)" : "Staff (Customers Only)"}
+            </span>
           </div>
           <p className="text-onSurfaceVariant text-body-md mt-4 max-w-md">
-            Oversee administrative accounts, assign privileges, and manage real-time platform users.
+            {isAdmin
+              ? "Oversee administrative and customer accounts, edit user profiles, and manage platform users in real time."
+              : "Manage customer accounts: edit profiles, disable accounts, and restore access. Staff and Admin accounts are read-only."}
           </p>
           {!isAdmin && (
-            <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-              <span>Staff View: User account modifications, creation, and suspensions are restricted to Administrators.</span>
+            <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+              <span>Staff Access: You can edit, disable, and reactivate Customer accounts. Staff and Admin accounts are view-only.</span>
             </div>
           )}
         </div>
@@ -318,15 +358,16 @@ export default function Users() {
                 className="w-full bg-white/5 border border-white/10 rounded pl-9 pr-4 py-2.5 text-sm text-onSurface placeholder:text-onSurfaceVariant outline-none"
               />
             </div>
-            <button className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
-              <Download size={15} />
-            </button>
             <button
-              onClick={loadData}
-              title="Refresh user list"
-              className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface hover:bg-white/10 transition"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              title={isRefreshing ? "Refreshing user list..." : "Refresh user list"}
+              className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-accent hover:bg-accent/10 transition-all disabled:opacity-60"
             >
-              <RefreshCw size={15} />
+              <RefreshCw
+                size={15}
+                className={`transition-transform duration-500 ${isRefreshing ? "animate-spin text-accent" : ""}`}
+              />
             </button>
           </div>
 

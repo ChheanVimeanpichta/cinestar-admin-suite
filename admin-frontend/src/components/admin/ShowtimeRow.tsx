@@ -58,16 +58,22 @@ export default function ShowtimeRow({
     <tr className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors">
       {/* Checkbox */}
       <td className="py-4 pl-6 pr-2 align-top">
-        <button
-          onClick={onToggleSelect}
-          className={`flex h-4 w-4 items-center justify-center rounded border ${
-            selected
-              ? "border-red-600 bg-red-600 text-onSurface"
-              : "border-white/10 hover:border-white/10"
-          }`}
-        >
-          {selected && <Check className="h-3 w-3" />}
-        </button>
+        {onToggleSelect ? (
+          <button
+            onClick={onToggleSelect}
+            className={`flex h-4 w-4 items-center justify-center rounded border ${
+              selected
+                ? "border-red-600 bg-red-600 text-onSurface"
+                : "border-white/10 hover:border-white/10"
+            }`}
+          >
+            {selected && <Check className="h-3 w-3" />}
+          </button>
+        ) : (
+          <div className="w-4 h-4 flex items-center justify-center text-white/20 text-[10px] font-mono">
+            •
+          </div>
+        )}
       </td>
       {/* Movie */}
       <td className="py-4 pr-4">
@@ -127,45 +133,51 @@ export default function ShowtimeRow({
             {data.status === "CONFLICT" && "⚠ "}
             {data.status}
           </span>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="text-onSurfaceVariant hover:text-onSurface"
-            >
-              <MoreVertical size={16} />
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-8 z-20 w-36 rounded-lg border border-white/10 bg-surface-variant py-1 shadow-xl">
-                  {onEdit && (
-                    <button
-                      onClick={() => {
-                        onEdit(data);
-                        setMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-xs text-onSurface hover:bg-surface-variant"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      onClick={() => {
-                        onDelete(data);
-                        setMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-surface-variant"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          {onEdit || onDelete ? (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="text-onSurfaceVariant hover:text-onSurface"
+              >
+                <MoreVertical size={16} />
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 top-8 z-20 w-36 rounded-lg border border-white/10 bg-surface-variant py-1 shadow-xl">
+                    {onEdit && (
+                      <button
+                        onClick={() => {
+                          onEdit(data);
+                          setMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-onSurface hover:bg-surface-variant"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={() => {
+                          onDelete(data);
+                          setMenuOpen(false);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-surface-variant"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <span className="text-[11px] text-onSurfaceVariant/50 font-mono italic pr-1">
+              Read-only
+            </span>
+          )}
         </div>
       </td>
     </tr>

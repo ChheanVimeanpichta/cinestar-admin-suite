@@ -44,7 +44,20 @@ export const updateUserProfile = async (req: Request, res: Response) => {
 export const updateUserRecord = async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const { name, email, status, avatarUrl } = req.body ?? {};
+  const requesterRole = (req as any).admin?.role;
+
   try {
+    // Staff can ONLY update Customer accounts
+    if (requesterRole === 'staff') {
+      const updatedCust = await updateCustomer(id, { name, email, status, avatarUrl } as any);
+      if (updatedCust) {
+        res.json(updatedCust);
+        return;
+      }
+      res.status(403).json({ message: 'Staff can only manage customer accounts' });
+      return;
+    }
+
     const updated = await updateAdmin(id, { name, email, avatarUrl });
     if (updated) {
       res.json(updated);
@@ -67,6 +80,19 @@ export const updateUserRecord = async (req: Request, res: Response) => {
 
 export const deleteUserById = async (req: Request, res: Response) => {
   const id = String(req.params.id);
+  const requesterRole = (req as any).admin?.role;
+
+  // Staff can ONLY disable Customer accounts
+  if (requesterRole === 'staff') {
+    const successCust = await deleteCustomer(id);
+    if (successCust) {
+      res.json({ success: true, message: 'Customer account disabled successfully' });
+      return;
+    }
+    res.status(403).json({ message: 'Staff can only disable customer accounts' });
+    return;
+  }
+
   const successAdmin = await deleteAdmin(id);
   if (successAdmin) {
     res.json({ success: true, message: 'User deleted successfully' });
