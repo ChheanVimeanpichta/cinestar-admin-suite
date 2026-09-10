@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  PlusCircle,
   LayoutGrid,
   Clapperboard,
   Clock,
@@ -39,24 +38,7 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      {isAdmin ? (
-        <button
-          onClick={() => navigate("/admin/showtimes")}
-          className="flex items-center justify-center gap-2 bg-accent text-onSurface rounded py-3 mb-6 font-body font-medium text-sm hover:brightness-110 transition"
-        >
-          <PlusCircle size={16} />
-          New Screening
-        </button>
-      ) : (
-        <button
-          onClick={() => navigate("/admin/bookings")}
-          className="flex items-center justify-center gap-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded py-2.5 mb-6 font-mono text-xs uppercase tracking-wider hover:bg-emerald-500/30 transition"
-        >
-          <ClipboardList size={14} />
-          Ticket Check-In
-        </button>
-      )}
-
+    
       <nav className="flex flex-col gap-1 flex-1">
         {links.map((link) => (
           <NavLink

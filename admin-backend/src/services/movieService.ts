@@ -92,7 +92,7 @@ export const createMovie = async (data: Partial<MovieItem>): Promise<MovieItem> 
   const title = data.title?.trim() || 'Untitled Movie';
   const poster = data.poster?.trim() || 'https://picsum.photos/seed/movie/300/450';
   const genre = data.genre?.trim() || 'General';
-  const score = data.score !== undefined && data.score !== null ? Number(data.score) : null;
+  const score = data.score !== undefined && data.score !== null && (data.score as any) !== '' && !isNaN(Number(data.score)) ? Number(data.score) : null;
   const synopsis = data.synopsis?.trim() || '';
   const badge = data.badge?.trim() || null;
   const hasBookBtn = Boolean(data.hasBookBtn);
@@ -140,7 +140,7 @@ export const updateMovie = async (
       title: data.title !== undefined ? data.title.trim() : undefined,
       poster: data.poster !== undefined ? data.poster.trim() : undefined,
       genre: data.genre !== undefined ? data.genre.trim() : undefined,
-      score: data.score !== undefined ? (data.score !== null ? Number(data.score) : null) : undefined,
+      score: data.score !== undefined ? (data.score !== null && (data.score as any) !== '' && !isNaN(Number(data.score)) ? Number(data.score) : null) : undefined,
       synopsis: data.synopsis !== undefined ? data.synopsis.trim() : undefined,
       badge: data.badge !== undefined ? (data.badge ? data.badge.trim() : null) : undefined,
       hasBookBtn: data.hasBookBtn !== undefined ? Boolean(data.hasBookBtn) : undefined,
