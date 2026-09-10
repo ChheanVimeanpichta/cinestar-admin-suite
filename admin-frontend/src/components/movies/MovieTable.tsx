@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Movie } from "../../types";
-import { MoreVertical, Pencil, Trash2, Check } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Check, Clock } from "lucide-react";
 
 interface MovieTableProps {
   movies: Movie[];
@@ -58,6 +59,7 @@ function ActionMenu({
   onDelete?: (movie: Movie) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="relative">
@@ -70,14 +72,24 @@ function ActionMenu({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-4 top-10 z-20 w-36 rounded-lg border border-white/10 bg-surface-variant py-1 shadow-xl">
+          <div className="absolute right-4 top-10 z-20 w-40 rounded-lg border border-white/10 bg-surface-variant py-1 shadow-xl">
+            <button
+              onClick={() => {
+                navigate(`/admin/showtimes?movieId=${movie.id}&openAdd=true`);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs text-accent hover:bg-white/5 transition-colors"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Add Showtime
+            </button>
             {onEdit && (
               <button
                 onClick={() => {
                   onEdit(movie);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-onSurface hover:bg-surface-variant"
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-onSurface hover:bg-white/5 transition-colors"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit
@@ -89,7 +101,7 @@ function ActionMenu({
                   onDelete(movie);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-surface-variant"
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-red-400 hover:bg-white/5 transition-colors"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Delete

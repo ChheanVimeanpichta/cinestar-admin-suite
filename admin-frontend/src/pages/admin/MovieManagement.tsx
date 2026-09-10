@@ -29,6 +29,15 @@ import MovieTable, { isMovieUpcoming } from "../../components/movies/MovieTable"
 import { mockMovies } from "../../mocks/movies";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 
+const MOVIES_CACHE_KEY = "cinestar_admin_cached_movies";
+
+export function broadcastMoviesUpdated(moviesList: Movie[]) {
+  try {
+    localStorage.setItem(MOVIES_CACHE_KEY, JSON.stringify(moviesList));
+    window.dispatchEvent(new CustomEvent("cinestar:movies-updated", { detail: moviesList }));
+  } catch {}
+}
+
 const mockInventoryStats = {
   liveScreens: 8,
   avgOccupancyPct: 64,
@@ -83,8 +92,19 @@ export default function MovieManagement() {
 
       if (moviesResult.status === "fulfilled") {
         setMovies(moviesResult.value);
+        broadcastMoviesUpdated(moviesResult.value);
       } else {
         console.warn("Failed to fetch movies from API, using fallback:", moviesResult.reason);
+        try {
+          const cached = localStorage.getItem(MOVIES_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setMovies(parsed);
+              return;
+            }
+          }
+        } catch {}
         setMovies(mockMovies);
       }
 
@@ -167,11 +187,19 @@ export default function MovieManagement() {
       setIsSaving(true);
       if (editingMovie) {
         const updated = await updateMovie(editingMovie.id, movieData);
-        setMovies((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+        setMovies((prev) => {
+          const updatedList = prev.map((m) => (m.id === updated.id ? updated : m));
+          broadcastMoviesUpdated(updatedList);
+          return updatedList;
+        });
         setFeedback({ type: "success", message: `Updated "${updated.title}" successfully!` });
       } else {
         const created = await createMovie(movieData);
-        setMovies((prev) => [created, ...prev]);
+        setMovies((prev) => {
+          const updatedList = [created, ...prev];
+          broadcastMoviesUpdated(updatedList);
+          return updatedList;
+        });
         setFeedback({ type: "success", message: `Added "${created.title}" to catalog!` });
       }
       setEditingMovie(null);
@@ -200,7 +228,11 @@ export default function MovieManagement() {
       setIsSubmittingDelete(true);
       setDeleteError("");
       await deleteMovie(deletingMovie.id);
-      setMovies((prev) => prev.filter((m) => m.id !== deletingMovie.id));
+      setMovies((prev) => {
+        const updatedList = prev.filter((m) => m.id !== deletingMovie.id);
+        broadcastMoviesUpdated(updatedList);
+        return updatedList;
+      });
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(deletingMovie.id);
@@ -262,7 +294,11 @@ export default function MovieManagement() {
       setBulkDeleteError("");
       const ids = Array.from(selectedIds);
       await bulkDeleteMovies(ids);
-      setMovies((prev) => prev.filter((m) => !selectedIds.has(m.id)));
+      setMovies((prev) => {
+        const updatedList = prev.filter((m) => !selectedIds.has(m.id));
+        broadcastMoviesUpdated(updatedList);
+        return updatedList;
+      });
       setSelectedIds(new Set());
       setFeedback({ type: "success", message: `Successfully deleted ${count} movie(s).` });
       setShowBulkDeleteModal(false);

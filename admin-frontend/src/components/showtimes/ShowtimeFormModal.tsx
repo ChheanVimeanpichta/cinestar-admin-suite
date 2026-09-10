@@ -9,6 +9,8 @@ interface ShowtimeFormModalProps {
   onSave: (data: ShowtimeRowData) => void;
   editData?: ShowtimeRowData | null;
   movies: Movie[];
+  isLoadingMovies?: boolean;
+  initialMovieId?: string;
 }
 
 const hallOptions = ["Hall 1", "Hall 2", "Hall 3", "Hall 4"];
@@ -20,6 +22,8 @@ export default function ShowtimeFormModal({
   onSave,
   editData,
   movies,
+  isLoadingMovies = false,
+  initialMovieId,
 }: ShowtimeFormModalProps) {
   const [selectedMovieId, setSelectedMovieId] = useState("");
   const [hall, setHall] = useState("Hall 1");
@@ -49,8 +53,23 @@ export default function ShowtimeFormModal({
       if (movie) setSelectedMovieId(movie.id);
     } else {
       resetForm();
+      if (initialMovieId) {
+        setSelectedMovieId(initialMovieId);
+        const m = movies.find((mov) => mov.id === initialMovieId);
+        if (m?.badge && formatOptions.includes(m.badge.toUpperCase())) {
+          setFormat(m.badge.toUpperCase());
+        }
+      }
     }
-  }, [editData, open, movies]);
+  }, [editData, open, movies, initialMovieId]);
+
+  const handleMovieSelect = (movieId: string) => {
+    setSelectedMovieId(movieId);
+    const movie = movies.find((m) => m.id === movieId);
+    if (movie?.badge && formatOptions.includes(movie.badge.toUpperCase())) {
+      setFormat(movie.badge.toUpperCase());
+    }
+  };
 
   if (!open) return null;
 
@@ -119,29 +138,73 @@ export default function ShowtimeFormModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Movie selection */}
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
-              Movie
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant">
+                Movie (From Movie Management)
+              </label>
+              <span className="font-mono text-[10px] text-accent font-semibold">
+                {isLoadingMovies ? "Loading..." : `${movies.length} Available`}
+              </span>
+            </div>
             <select
               value={selectedMovieId}
-              onChange={(e) => setSelectedMovieId(e.target.value)}
+              onChange={(e) => handleMovieSelect(e.target.value)}
               required
-              className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer"
+              disabled={isLoadingMovies && movies.length === 0}
+              className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer disabled:opacity-50"
             >
               <option value="" className="bg-surface">
-                Select a movie...
+                {isLoadingMovies && movies.length === 0
+                  ? "Loading movies from catalog..."
+                  : "Select a movie..."}
               </option>
               {movies.map((m) => (
                 <option key={m.id} value={m.id} className="bg-surface">
-                  {m.title}
+                  {m.title} {m.durationMins ? `(${m.durationMins}m)` : ""} {m.badge ? `[${m.badge}]` : ""}
                 </option>
               ))}
             </select>
+
+            {/* Visual Movie Preview Card */}
             {selectedMovie && (
-              <p className="font-mono text-[10px] text-onSurfaceVariant mt-1 uppercase">
-                {selectedMovie.genre} &bull; {selectedMovie.durationMins || "?"}
-                MIN
-              </p>
+              <div className="mt-3 p-3 bg-white/[0.04] border border-white/10 rounded-lg flex items-center gap-3">
+                {selectedMovie.poster ? (
+                  <img
+                    src={selectedMovie.poster}
+                    alt={selectedMovie.title}
+                    className="w-12 h-16 object-cover rounded border border-white/10 shrink-0 bg-surface shadow"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-12 h-16 bg-white/10 rounded flex items-center justify-center text-[10px] text-onSurfaceVariant shrink-0">
+                    No Poster
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-heading font-semibold text-sm text-onSurface truncate">
+                      {selectedMovie.title}
+                    </h4>
+                    {selectedMovie.badge && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-accent/20 text-accent border border-accent/30">
+                        {selectedMovie.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-mono text-[11px] text-onSurfaceVariant mt-1">
+                    {selectedMovie.genre || "General"} &bull;{" "}
+                    {selectedMovie.durationMins ? `${selectedMovie.durationMins} MIN` : "120 MIN"}
+                    {selectedMovie.score != null && ` • ⭐ ${selectedMovie.score}`}
+                  </p>
+                  {selectedMovie.releaseDate && (
+                    <p className="font-mono text-[10px] text-onSurfaceVariant/70 mt-0.5">
+                      Release Date: {selectedMovie.releaseDate}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 

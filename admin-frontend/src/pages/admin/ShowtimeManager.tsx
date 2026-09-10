@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Calendar as CalendarIcon,
   Table2,
@@ -21,8 +22,11 @@ import ShowtimeFormModal from "../../components/showtimes/ShowtimeFormModal";
 import { allShowtimeRows } from "../../mocks/showtimes";
 import { mockMovies } from "../../mocks/movies";
 import { useAdminAuth } from "../../context/AdminAuthContext";
+import { fetchAllMovies } from "../../services/movieApi";
+import { Movie } from "../../types";
 
 const STORAGE_KEY = "cinestar_admin_static_showtimes_v1";
+const MOVIES_CACHE_KEY = "cinestar_admin_cached_movies";
 
 function loadInitialShowtimes(): ShowtimeRowData[] {
   try {
@@ -39,6 +43,10 @@ export default function ShowtimeManager() {
   const { admin } = useAdminAuth();
   const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectedMovieId = searchParams.get("movieId") || "";
+  const autoOpenAdd = searchParams.get("openAdd") === "true";
+
   const [view, setView] = useState<"table" | "calendar">("table");
   const [allShowtimes, setAllShowtimes] = useState<ShowtimeRowData[]>(loadInitialShowtimes);
   const [page, setPage] = useState(1);
@@ -49,6 +57,84 @@ export default function ShowtimeManager() {
   const [filterFormat, setFilterFormat] = useState("All Formats");
   const [showModal, setShowModal] = useState(false);
   const [editingShowtime, setEditingShowtime] = useState<ShowtimeRowData | null>(null);
+
+  // Dynamic movie list loaded from Movie Management
+  const [movies, setMovies] = useState<Movie[]>(() => {
+    try {
+      const cached = localStorage.getItem(MOVIES_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return mockMovies;
+  });
+  const [loadingMovies, setLoadingMovies] = useState(false);
+
+  const refreshMovies = async () => {
+    try {
+      setLoadingMovies(true);
+      const res = await fetchAllMovies();
+      if (Array.isArray(res) && res.length > 0) {
+        setMovies(res);
+        try {
+          localStorage.setItem(MOVIES_CACHE_KEY, JSON.stringify(res));
+        } catch {}
+      }
+    } catch (err) {
+      console.warn("Failed to fetch movies from API in showtime manager:", err);
+      try {
+        const cached = localStorage.getItem(MOVIES_CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) setMovies(parsed);
+        }
+      } catch {}
+    } finally {
+      setLoadingMovies(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshMovies();
+
+    const onMoviesUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<Movie[]>;
+      if (customEvent.detail && Array.isArray(customEvent.detail)) {
+        setMovies(customEvent.detail);
+      } else {
+        refreshMovies();
+      }
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === MOVIES_CACHE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) setMovies(parsed);
+        } catch {}
+      }
+    };
+
+    window.addEventListener("cinestar:movies-updated", onMoviesUpdated);
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", refreshMovies);
+
+    return () => {
+      window.removeEventListener("cinestar:movies-updated", onMoviesUpdated);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", refreshMovies);
+    };
+  }, []);
+
+  // Handle direct navigation from Movie Management (?movieId=...&openAdd=true)
+  useEffect(() => {
+    if (autoOpenAdd && isAdmin) {
+      setEditingShowtime(null);
+      setShowModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [autoOpenAdd, isAdmin, setSearchParams]);
 
   // Synchronize state with localStorage
   useEffect(() => {
@@ -173,6 +259,7 @@ export default function ShowtimeManager() {
 
   function handleAddShowtime() {
     if (!isAdmin) return;
+    refreshMovies();
     setEditingShowtime(null);
     setShowModal(true);
   }
@@ -577,7 +664,9 @@ export default function ShowtimeManager() {
         }}
         onSave={handleSaveShowtime}
         editData={editingShowtime}
-        movies={mockMovies}
+        movies={movies}
+        isLoadingMovies={loadingMovies}
+        initialMovieId={preselectedMovieId || undefined}
       />
     </div>
   );
