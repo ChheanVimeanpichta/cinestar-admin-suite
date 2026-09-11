@@ -184,3 +184,48 @@ export function updateAdminUser(
 export function deleteAdminUser(id: string): Promise<{ success: boolean; message: string }> {
   return apiDelete<{ success: boolean; message: string }>(`/users/${id}`);
 }
+
+// Offer Management Endpoints
+export interface AdminOfferBullet {
+  icon: string;
+  text: string;
+}
+
+export interface AdminOffer {
+  id: string;
+  title: string;
+  caption?: string;
+  badge?: string;
+  tag?: string;
+  image: string;
+  icon?: string;
+  validity?: string;
+  description: string;
+  bullets?: AdminOfferBullet[];
+  perks?: string[];
+  publishDate?: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function fetchAllOffers(includeAll = true): Promise<AdminOffer[]> {
+  const sep = includeAll ? '?all=true&' : '?';
+  return apiGet<AdminOffer[]>(`/offers${sep}_t=${Date.now()}`);
+}
+
+export function fetchOfferById(id: string): Promise<AdminOffer> {
+  return apiGet<AdminOffer>(`/offers/${id}?_t=${Date.now()}`);
+}
+
+export function createOffer(payload: Partial<AdminOffer>): Promise<AdminOffer> {
+  return apiPost<AdminOffer>('/offers', payload);
+}
+
+export function updateOffer(id: string, payload: Partial<AdminOffer>): Promise<AdminOffer> {
+  return apiPut<AdminOffer>(`/offers/${id}`, payload);
+}
+
+export function deleteOffer(id: string): Promise<{ success: boolean; message: string }> {
+  return apiDelete<{ success: boolean; message: string }>(`/offers/${id}`);
+}

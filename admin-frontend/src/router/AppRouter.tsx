@@ -11,6 +11,7 @@ import ShowtimeManager from "../pages/admin/ShowtimeManager";
 import BookingLog from "../pages/admin/BookingLog";
 import Users from "../pages/admin/Users";
 import Theaters from "../pages/admin/Theaters";
+import Offers from "../pages/admin/Offers";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -73,6 +74,10 @@ const router = createBrowserRouter([
     element: <Navigate to="/admin/theaters" replace />,
   },
   {
+    path: "/offers",
+    element: <Navigate to="/admin/offers" replace />,
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>
@@ -86,6 +91,7 @@ const router = createBrowserRouter([
       { path: "bookings", element: <BookingLog /> },
       { path: "users", element: <Users /> },
       { path: "theaters", element: <Theaters /> },
+      { path: "offers", element: <Offers /> },
     ],
   },
   {
