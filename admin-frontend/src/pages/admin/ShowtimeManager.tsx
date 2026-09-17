@@ -26,6 +26,11 @@ import { mockMovies } from "../../mocks/movies";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { fetchAllMovies } from "../../services/movieApi";
 import { fetchTheaterVenues } from "../../services/theaterApi";
+import {
+  createScreeningApi,
+  syncScreeningsApi,
+  deleteScreeningApi,
+} from "../../services/showtimeApi";
 import { Movie, TheaterVenue } from "../../types";
 
 const STORAGE_KEY = "cinestar_admin_static_showtimes_v2";
@@ -34,30 +39,39 @@ const MOVIES_CACHE_KEY = "cinestar_admin_cached_movies";
 const FALLBACK_VENUES: TheaterVenue[] = [
   {
     id: "v-001",
-    name: "CineStar Grand Mall",
-    address: "Level 4, Grand Mall, Monivong Blvd, Phnom Penh",
+    name: "CineStar Downtown",
+    address: "Level 4, Monivong Blvd, Phnom Penh",
     status: "Active",
-    hallCount: 6,
+    hallCount: 4,
     capacity: 720,
     formats: ["IMAX", "4DX", "DOLBY", "2D"],
   },
   {
     id: "v-002",
-    name: "CineStar Riverside IMAX",
+    name: "CineStar Riverside",
     address: "Preah Sisowath Quay, Phnom Penh",
     status: "Active",
-    hallCount: 4,
-    capacity: 480,
-    formats: ["IMAX", "4DX", "2D"],
+    hallCount: 2,
+    capacity: 240,
+    formats: ["DOLBY", "VIP"],
   },
   {
     id: "v-003",
-    name: "CineStar City Center",
+    name: "CineStar Westgate",
     address: "Russian Federation Blvd, Phnom Penh",
     status: "Active",
+    hallCount: 2,
+    capacity: 220,
+    formats: ["STANDARD", "2D"],
+  },
+  {
+    id: "v-1788767915971",
+    name: "Cinestar Olypia Mall",
+    address: "Monireth blvd, Veal Vong Street, Phnom Penh",
+    status: "Active",
     hallCount: 3,
-    capacity: 360,
-    formats: ["DOLBY", "2D"],
+    capacity: 340,
+    formats: ["2D", "STANDARD"],
   },
 ];
 
@@ -125,6 +139,16 @@ export default function ShowtimeManager() {
       setFilterTheater("All Halls");
     }
   }, [searchParams]);
+
+  // Persist showtimes to localStorage and sync to backend API
+  useEffect(() => {
+    if (allShowtimes && allShowtimes.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(allShowtimes));
+      } catch {}
+      syncScreeningsApi(allShowtimes);
+    }
+  }, [allShowtimes]);
 
   // Dynamic movie list loaded from Movie Management
   const [movies, setMovies] = useState<Movie[]>(() => {
@@ -351,6 +375,7 @@ export default function ShowtimeManager() {
   function handleBulkDelete() {
     if (!isAdmin) return;
     if (window.confirm(`Delete ${selectedIds.size} selected showtime(s)?`)) {
+      selectedIds.forEach((id) => deleteScreeningApi(id));
       setAllShowtimes((prev) => prev.filter((r) => !selectedIds.has(r.id)));
       setSelectedIds(new Set());
     }
@@ -382,12 +407,14 @@ export default function ShowtimeManager() {
       setPage(1);
     }
     setEditingShowtime(null);
+    createScreeningApi(data);
   }
 
   function handleDeleteRow(data: ShowtimeRowData) {
     if (!isAdmin) return;
     if (window.confirm(`Delete showtime for "${data.title}" at ${data.time}?`)) {
       setAllShowtimes((prev) => prev.filter((r) => r.id !== data.id));
+      deleteScreeningApi(data.id);
     }
   }
 

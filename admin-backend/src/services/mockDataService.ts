@@ -701,6 +701,116 @@ export const getShowtimeStats = async () => {
   return { todaysShows, totalCapacityPct, conflicts, activeHalls };
 };
 
+export const createScreeningService = async (data: any): Promise<any> => {
+  const id = data.id || `sc-${Date.now()}`;
+  let movieId = (data.movieId || '').trim();
+  if (!movieId && data.title) {
+    const foundMovie = movies.find((m) => m.title.toLowerCase() === data.title.toLowerCase());
+    movieId = foundMovie?.id || 'avenger';
+  }
+  if (!movieId) movieId = 'avenger';
+
+  const time = data.time || '18:00';
+  const date = data.date || data.timeLabel || 'Today';
+  const format = (data.format || 'STANDARD').toUpperCase();
+  const hall = data.hall || 'Hall 1';
+  const price = typeof data.price === 'number' ? data.price : (data.price ? Number(data.price) : 14);
+
+  let venueId = data.venueId;
+  let venueName = (data.venueName || data.theaterName || '').trim();
+  let theaterId = data.theaterId || data.hallId;
+
+  // Resolve to canonical CineStar venues
+  if (venueId === 'v-001' || venueName.toLowerCase().includes('downtown') || venueName.toLowerCase().includes('grand mall')) {
+    venueId = 'v-001';
+    venueName = 'CineStar Downtown';
+    if (!theaterId) theaterId = 'th-hall-3';
+  } else if (venueId === 'v-002' || venueName.toLowerCase().includes('riverside')) {
+    venueId = 'v-002';
+    venueName = 'CineStar Riverside';
+    if (!theaterId) theaterId = 'th-hall-5';
+  } else if (venueId === 'v-003' || venueName.toLowerCase().includes('westgate') || venueName.toLowerCase().includes('city center')) {
+    venueId = 'v-003';
+    venueName = 'CineStar Westgate';
+    if (!theaterId) theaterId = 'th-hall-7';
+  } else if (venueId === 'v-1788767915971' || venueName.toLowerCase().includes('olympia') || venueName.toLowerCase().includes('olypia')) {
+    venueId = 'v-1788767915971';
+    venueName = 'Cinestar Olypia Mall';
+    if (!theaterId) theaterId = 'h-1788768009783';
+  } else {
+    venueId = venueId || 'v-001';
+    venueName = venueName || 'CineStar Downtown';
+    if (!theaterId) theaterId = 'th-hall-1';
+  }
+
+  const newScreening = {
+    id,
+    movieId,
+    theaterId,
+    venueId,
+    venueName,
+    theaterName: venueName,
+    date,
+    time,
+    format,
+    hall,
+    price,
+    title: data.title || movies.find((m) => m.id === movieId)?.title || 'Avengers: Endgame',
+  };
+
+  // Try Prisma creation
+  try {
+    const existingTheater = await prisma.theater.findFirst({
+      where: { OR: [{ id: theaterId }, { venueId }] },
+    });
+    const targetTheaterId = existingTheater ? existingTheater.id : 'th-hall-1';
+
+    let existingMovie = await prisma.movie.findUnique({ where: { id: movieId } });
+    if (!existingMovie && data.title) {
+      existingMovie = await prisma.movie.findFirst({ where: { title: data.title } });
+    }
+
+    if (existingMovie) {
+      const created = await prisma.screening.create({
+        data: {
+          id,
+          movieId: existingMovie.id,
+          theaterId: targetTheaterId,
+          date,
+          time,
+          format,
+          hall,
+          price,
+        },
+      });
+      newScreening.id = created.id;
+    }
+  } catch (err) {
+    console.warn('[mockDataService] Prisma screening creation skipped/error:', err);
+  }
+
+  // Update in-memory screenings
+  const existingIdx = screenings.findIndex((s) => s.id === newScreening.id);
+  if (existingIdx >= 0) {
+    screenings[existingIdx] = newScreening as any;
+  } else {
+    screenings.unshift(newScreening as any);
+  }
+
+  return newScreening;
+};
+
+export const deleteScreeningService = async (id: string): Promise<boolean> => {
+  try {
+    await prisma.screening.delete({ where: { id } });
+  } catch {}
+  const idx = screenings.findIndex((s) => s.id === id);
+  if (idx >= 0) {
+    screenings.splice(idx, 1);
+  }
+  return true;
+};
+
 export const getScreeningsForMovie = async (movieId: string): Promise<any[]> => {
   const normId = (movieId || '').trim().toLowerCase();
 
@@ -713,7 +823,13 @@ export const getScreeningsForMovie = async (movieId: string): Promise<any[]> => 
     'th-hall-6': { venueId: 'v-002', venueName: 'CineStar Riverside', hallName: 'Hall 6 - Dolby Atmos' },
     'th-hall-7': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 7 - ScreenX' },
     'th-hall-8': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 8 - Laser 2D' },
+    'h-1788768009783': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 6' },
+    'h-1788866998828': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 1' },
+    'h-1788867016383': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 1' },
   };
+
+  const results: any[] = [];
+  const seenKeys = new Set<string>();
 
   try {
     const dbScreenings = await prisma.screening.findMany({
@@ -732,50 +848,68 @@ export const getScreeningsForMovie = async (movieId: string): Promise<any[]> => 
       },
     });
 
-    if (dbScreenings.length > 0) {
-      return dbScreenings.map((s) => {
-        const mapped = defaultHallToVenue[s.theaterId] || {};
-        const vName = s.theater?.venue?.name || mapped.venueName || 'CineStar Downtown';
-        const vId = s.theater?.venueId || s.theater?.venue?.id || mapped.venueId || 'v-001';
-        return {
-          id: s.id,
-          movieId: s.movieId,
-          theaterId: s.theaterId,
-          venueId: vId,
-          venueName: vName,
-          theaterName: vName,
-          date: s.date,
-          time: s.time,
-          format: s.format as any,
-          hall: s.hall || s.theater?.name || mapped.hallName || 'Standard Hall',
-          price: s.price,
-        };
+    for (const s of dbScreenings) {
+      const mapped = defaultHallToVenue[s.theaterId] || {};
+      const vName = s.theater?.venue?.name || mapped.venueName || 'CineStar Downtown';
+      const vId = s.theater?.venueId || s.theater?.venue?.id || mapped.venueId || 'v-001';
+      const key = `${s.date}_${s.time}_${vName}_${s.format}`;
+      seenKeys.add(key);
+      seenKeys.add(s.id);
+      results.push({
+        id: s.id,
+        movieId: s.movieId,
+        movieTitle: s.movie?.title,
+        theaterId: s.theaterId,
+        venueId: vId,
+        venueName: vName,
+        theaterName: vName,
+        date: s.date,
+        time: s.time,
+        format: s.format as any,
+        hall: s.hall || s.theater?.name || mapped.hallName || 'Standard Hall',
+        price: s.price,
       });
     }
   } catch (err) {
     console.warn('[mockDataService] Failed to query Prisma screenings:', err);
   }
 
-  const memScreenings = screenings.filter(
-    (s) =>
-      s.movieId.toLowerCase() === normId ||
-      movies.find((m) => m.id === s.movieId)?.title.toLowerCase().includes(normId)
-  );
+  // Also include in-memory screenings
+  const memScreenings = screenings.filter((s: any) => {
+    const mId = (s.movieId || '').toLowerCase();
+    const title = (s.title || movies.find((m) => m.id === s.movieId)?.title || '').toLowerCase();
+    return (
+      mId === normId ||
+      mId.includes(normId) ||
+      normId.includes(mId) ||
+      (title && title.includes(normId)) ||
+      (title && normId.includes(title))
+    );
+  });
 
-  return memScreenings.map((s) => {
+  for (const s of memScreenings) {
     const mapped = defaultHallToVenue[s.theaterId] || {
-      venueId: 'v-001',
-      venueName: 'CineStar Downtown',
+      venueId: (s as any).venueId || 'v-001',
+      venueName: (s as any).venueName || (s as any).theaterName || 'CineStar Downtown',
       hallName: s.hall || 'Hall 1',
     };
-    return {
-      ...s,
-      venueId: mapped.venueId,
-      venueName: mapped.venueName,
-      theaterName: mapped.venueName,
-      hall: mapped.hallName,
-    };
-  });
+    const vName = (s as any).venueName || (s as any).theaterName || mapped.venueName;
+    const key = `${s.date}_${s.time}_${vName}_${s.format}`;
+
+    if (!seenKeys.has(s.id) && !seenKeys.has(key)) {
+      seenKeys.add(s.id);
+      seenKeys.add(key);
+      results.push({
+        ...s,
+        venueId: (s as any).venueId || mapped.venueId,
+        venueName: vName,
+        theaterName: vName,
+        hall: s.hall || mapped.hallName,
+      });
+    }
+  }
+
+  return results;
 };
 
 export const getSeatsForScreening = async (screeningId: string): Promise<Seat[]> => {

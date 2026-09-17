@@ -5,16 +5,19 @@ export type ShowtimeStatus = "ALMOST FULL" | "ON SALE" | "CONFLICT";
 
 export interface ShowtimeRowData {
   id: string;
+  movieId?: string;
   posterUrl: string;
   title: string;
   durationMins: number;
   genre: string;
   theaterName: string;
   venueId?: string;
+  venueName?: string;
   hall: string;
   hallId?: string;
   time: string;
   timeLabel: string; // e.g. "Today"
+  date?: string;
   format: string;
   seatsFilled: number;
   seatsTotal: number;

@@ -20,7 +20,7 @@ router.use('/movies', movieRoutes);
 router.use('/offers', offerRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
-router.use('/screenings', adminAuthMiddleware, screeningRoutes);
+router.use('/screenings', screeningRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/security', adminAuthMiddleware, securityRoutes);
 router.use('/users', adminAuthMiddleware, userRoutes);
