@@ -15,6 +15,8 @@ import {
   X,
   Clock,
   Film,
+  Building2,
+  MapPin,
 } from "lucide-react";
 import ShowtimeStatCard from "../../components/admin/ShowtimeStatCard";
 import ShowtimeRow, { ShowtimeRowData } from "../../components/admin/ShowtimeRow";
@@ -23,10 +25,41 @@ import { allShowtimeRows } from "../../mocks/showtimes";
 import { mockMovies } from "../../mocks/movies";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 import { fetchAllMovies } from "../../services/movieApi";
-import { Movie } from "../../types";
+import { fetchTheaterVenues } from "../../services/theaterApi";
+import { Movie, TheaterVenue } from "../../types";
 
-const STORAGE_KEY = "cinestar_admin_static_showtimes_v1";
+const STORAGE_KEY = "cinestar_admin_static_showtimes_v2";
 const MOVIES_CACHE_KEY = "cinestar_admin_cached_movies";
+
+const FALLBACK_VENUES: TheaterVenue[] = [
+  {
+    id: "v-001",
+    name: "CineStar Grand Mall",
+    address: "Level 4, Grand Mall, Monivong Blvd, Phnom Penh",
+    status: "Active",
+    hallCount: 6,
+    capacity: 720,
+    formats: ["IMAX", "4DX", "DOLBY", "2D"],
+  },
+  {
+    id: "v-002",
+    name: "CineStar Riverside IMAX",
+    address: "Preah Sisowath Quay, Phnom Penh",
+    status: "Active",
+    hallCount: 4,
+    capacity: 480,
+    formats: ["IMAX", "4DX", "2D"],
+  },
+  {
+    id: "v-003",
+    name: "CineStar City Center",
+    address: "Russian Federation Blvd, Phnom Penh",
+    status: "Active",
+    hallCount: 3,
+    capacity: 360,
+    formats: ["DOLBY", "2D"],
+  },
+];
 
 function loadInitialShowtimes(): ShowtimeRowData[] {
   try {
@@ -49,14 +82,49 @@ export default function ShowtimeManager() {
 
   const [view, setView] = useState<"table" | "calendar">("table");
   const [allShowtimes, setAllShowtimes] = useState<ShowtimeRowData[]>(loadInitialShowtimes);
+  const [venues, setVenues] = useState<TheaterVenue[]>(FALLBACK_VENUES);
+  const [selectedVenueId, setSelectedVenueId] = useState<string>(
+    searchParams.get("venueId") || FALLBACK_VENUES[0].id
+  );
+
   const [page, setPage] = useState(1);
   const pageSize = 4;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterTheater, setFilterTheater] = useState("All Theaters");
+  const [filterTheater, setFilterTheater] = useState("All Halls");
   const [filterFormat, setFilterFormat] = useState("All Formats");
   const [showModal, setShowModal] = useState(false);
   const [editingShowtime, setEditingShowtime] = useState<ShowtimeRowData | null>(null);
+
+  const selectedVenue = venues.find((v) => v.id === selectedVenueId) || venues[0];
+
+  // Load venues on mount
+  useEffect(() => {
+    fetchTheaterVenues()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setVenues(data);
+          setSelectedVenueId((prev) => {
+            const urlVenueId = searchParams.get("venueId");
+            if (urlVenueId && data.some((v) => v.id === urlVenueId)) return urlVenueId;
+            if (prev && prev !== "all" && data.some((v) => v.id === prev)) return prev;
+            return data[0].id;
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch theater venues in showtime manager:", err);
+      });
+  }, [searchParams]);
+
+  // Update venue from URL query if user navigates with ?venueId=...
+  useEffect(() => {
+    const vId = searchParams.get("venueId");
+    if (vId) {
+      setSelectedVenueId(vId);
+      setFilterTheater("All Halls");
+    }
+  }, [searchParams]);
 
   // Dynamic movie list loaded from Movie Management
   const [movies, setMovies] = useState<Movie[]>(() => {
@@ -144,13 +212,24 @@ export default function ShowtimeManager() {
   }, [allShowtimes]);
 
   const theaterOptions = useMemo(() => {
-    const set = new Set(["Hall 1", "Hall 2", "Hall 3", "Hall 4"]);
-    allShowtimes.forEach((r) => {
-      if (r.hall) set.add(r.hall);
-      if (r.theaterName) set.add(r.theaterName);
-    });
-    return Array.from(set);
-  }, [allShowtimes]);
+    if (selectedVenue) {
+      const hallsSet = new Set<string>();
+      if (selectedVenue.halls) {
+        selectedVenue.halls.forEach((h) => hallsSet.add(h.name));
+      }
+      allShowtimes.forEach((r) => {
+        if (
+          r.venueId === selectedVenue.id ||
+          r.theaterName.toLowerCase() === selectedVenue.name.toLowerCase()
+        ) {
+          if (r.hall) hallsSet.add(r.hall);
+        }
+      });
+      return ["All Halls", ...Array.from(hallsSet)];
+    }
+
+    return ["All Halls"];
+  }, [selectedVenue, allShowtimes]);
 
   const formatOptions = useMemo(() => [
     "All Formats",
@@ -161,28 +240,46 @@ export default function ShowtimeManager() {
     "STANDARD",
   ], []);
 
-  // Compute live stats from static data
+  // Compute live stats scoped to selected theater
+  const scopedShowtimes = useMemo(() => {
+    if (!selectedVenue) return allShowtimes;
+    return allShowtimes.filter(
+      (r) =>
+        r.venueId === selectedVenue.id ||
+        (selectedVenue.name && r.theaterName?.toLowerCase() === selectedVenue.name.toLowerCase())
+    );
+  }, [allShowtimes, selectedVenue]);
+
   const stats = useMemo(() => {
-    const todaysShows = allShowtimes.filter(
+    const todaysShows = scopedShowtimes.filter(
       (r) => r.timeLabel === "Today" || r.timeLabel?.toLowerCase().includes("today")
     ).length;
-    const totalFilled = allShowtimes.reduce((acc, r) => acc + (r.seatsFilled || 0), 0);
-    const totalSeats = allShowtimes.reduce((acc, r) => acc + (r.seatsTotal || 64), 0);
+    const totalFilled = scopedShowtimes.reduce((acc, r) => acc + (r.seatsFilled || 0), 0);
+    const totalSeats = scopedShowtimes.reduce((acc, r) => acc + (r.seatsTotal || 120), 0);
     const totalCapacityPct = totalSeats > 0 ? Math.round((totalFilled / totalSeats) * 100) : 72;
-    const conflicts = allShowtimes.filter((r) => r.status === "CONFLICT").length;
-    const activeHalls = new Set(allShowtimes.map((r) => r.hall || r.theaterName)).size;
+    const conflicts = scopedShowtimes.filter((r) => r.status === "CONFLICT").length;
+    const activeHalls = new Set(scopedShowtimes.map((r) => r.hall)).size;
 
     return {
-      todaysShows: todaysShows || 3,
+      todaysShows: todaysShows || (scopedShowtimes.length > 0 ? 1 : 0),
       totalCapacityPct,
       conflicts,
-      activeHalls: activeHalls || 4,
+      activeHalls: activeHalls || (selectedVenue?.hallCount ?? 4),
     };
-  }, [allShowtimes]);
+  }, [scopedShowtimes, selectedVenue]);
 
   // Client-side instant filter and search
   const filteredRows = useMemo(() => {
     return allShowtimes.filter((r) => {
+      // 1. Theater venue filter (strictly scoped to selected theater)
+      if (selectedVenue) {
+        const matchesVenue =
+          r.venueId === selectedVenue.id ||
+          (selectedVenue.name && r.theaterName?.toLowerCase() === selectedVenue.name.toLowerCase());
+        if (!matchesVenue) return false;
+      }
+
+      // 2. Search query
       const q = searchQuery.trim().toLowerCase();
       const matchSearch =
         !q ||
@@ -193,18 +290,20 @@ export default function ShowtimeManager() {
         (r.format && r.format.toLowerCase().includes(q)) ||
         (r.time && r.time.toLowerCase().includes(q));
 
+      // 3. Hall dropdown filter
       const matchTheater =
+        filterTheater === "All Halls" ||
         filterTheater === "All Theaters" ||
-        r.hall === filterTheater ||
-        r.theaterName === filterTheater;
+        r.hall === filterTheater;
 
+      // 4. Format filter
       const matchFormat =
         filterFormat === "All Formats" ||
         r.format.toUpperCase() === filterFormat.toUpperCase();
 
       return matchSearch && matchTheater && matchFormat;
     });
-  }, [allShowtimes, searchQuery, filterTheater, filterFormat]);
+  }, [allShowtimes, selectedVenue, searchQuery, filterTheater, filterFormat]);
 
   const totalCount = filteredRows.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -257,10 +356,14 @@ export default function ShowtimeManager() {
     }
   }
 
-  function handleAddShowtime() {
+  function handleAddShowtime(targetVenueId?: string) {
     if (!isAdmin) return;
     refreshMovies();
     setEditingShowtime(null);
+    const chosenVenueId = targetVenueId || selectedVenue?.id || selectedVenueId;
+    if (chosenVenueId && typeof chosenVenueId === "string") {
+      setSelectedVenueId(chosenVenueId);
+    }
     setShowModal(true);
   }
 
@@ -317,7 +420,7 @@ export default function ShowtimeManager() {
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
@@ -332,7 +435,7 @@ export default function ShowtimeManager() {
           </div>
           <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
             {isAdmin
-              ? "Manage scheduling, resolve conflicts, and optimize hall utilization across all venues."
+              ? "Manage scheduling, resolve conflicts, and optimize hall utilization across all cinema venues."
               : "View scheduled showtimes, calendar, and hall availability. Showtime creation and scheduling are restricted to Administrators."}
           </p>
         </div>
@@ -361,7 +464,7 @@ export default function ShowtimeManager() {
 
           {isAdmin && (
             <button
-              onClick={handleAddShowtime}
+              onClick={() => handleAddShowtime(selectedVenue?.id)}
               className="flex items-center gap-2 px-5 py-2.5 rounded bg-accent text-onSurface text-sm font-body font-semibold hover:brightness-110 transition shadow"
             >
               <Plus size={15} />
@@ -369,6 +472,87 @@ export default function ShowtimeManager() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Theater (Venue) Tabs */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-mono uppercase text-onSurfaceVariant flex items-center gap-1.5">
+            <Building2 size={14} className="text-accent" />
+            Cinema Venue / Theater
+          </label>
+          <span className="text-xs text-onSurfaceVariant/70 font-mono">
+            {venues.length} Venues Active
+          </span>
+        </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {venues.map((venue) => {
+            const isSelected = (selectedVenue?.id || selectedVenueId) === venue.id;
+            const venueShowsCount = allShowtimes.filter(
+              (r) => r.venueId === venue.id || r.theaterName.toLowerCase() === venue.name.toLowerCase()
+            ).length;
+
+            return (
+              <button
+                key={venue.id}
+                type="button"
+                onClick={() => {
+                  setSelectedVenueId(venue.id);
+                  setFilterTheater("All Halls");
+                  setPage(1);
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-medium font-body flex items-center gap-2 transition-all shrink-0 border ${
+                  isSelected
+                    ? "bg-accent/20 border-accent/50 text-accent font-semibold shadow-sm shadow-accent/20"
+                    : "bg-surface-variant/60 border-white/10 text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
+                }`}
+              >
+                <Building2 size={14} />
+                <span>{venue.name}</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                  isSelected ? "bg-accent/30 text-accent font-bold" : "bg-white/10 text-onSurfaceVariant"
+                }`}>
+                  {venueShowsCount} shows
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected Theater Highlight Card */}
+        {selectedVenue && (
+          <div className="mt-3 p-4 rounded-xl bg-white/[0.02] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 rounded-xl bg-red-600/10 border border-red-600/20 text-red-500 shrink-0">
+                <Building2 size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h3 className="font-heading font-bold text-base text-onSurface">
+                    {selectedVenue.name}
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-green-500/15 border border-green-500/30 text-green-400">
+                    Active Theater
+                  </span>
+                </div>
+                <p className="text-xs text-onSurfaceVariant flex items-center gap-1 mt-1">
+                  <MapPin size={12} className="text-onSurfaceVariant/70 shrink-0" />
+                  <span>{selectedVenue.address || "Cinema Branch"}</span>
+                </p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="text-[11px] font-mono text-onSurfaceVariant">
+                    {selectedVenue.hallCount || 4} Halls configured
+                  </span>
+                  {selectedVenue.formats && selectedVenue.formats.map((f) => (
+                    <span key={f} className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white/10 text-onSurfaceVariant">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stat cards */}
@@ -421,7 +605,6 @@ export default function ShowtimeManager() {
           }}
           className="bg-surface-variant border border-white/10 rounded px-4 py-2.5 text-sm text-onSurface outline-none cursor-pointer"
         >
-          <option>All Theaters</option>
           {theaterOptions.map((t) => (
             <option key={t} value={t}>
               {t}
@@ -573,7 +756,7 @@ export default function ShowtimeManager() {
           <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
             {calendarDays.map((day) => {
               // Map static showtimes across days
-              const dayShows = allShowtimes.filter((r) => {
+              const dayShows = scopedShowtimes.filter((r) => {
                 if (day.isToday) {
                   return r.timeLabel === "Today" || r.timeLabel?.toLowerCase().includes("today");
                 }
@@ -635,9 +818,9 @@ export default function ShowtimeManager() {
                           <p className={`text-xs font-semibold text-onSurface truncate ${isAdmin ? "group-hover:text-accent transition-colors" : ""}`}>
                             {show.title}
                           </p>
-                          <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1">
-                            <Film size={10} />
-                            {show.hall || show.theaterName} • {show.seatsFilled}/{show.seatsTotal}
+                          <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1 truncate">
+                            <Film size={10} className="shrink-0" />
+                            <span className="truncate">{show.theaterName ? `${show.theaterName} • ${show.hall}` : show.hall}</span>
                           </p>
                         </CardWrapper>
                       );
@@ -667,6 +850,8 @@ export default function ShowtimeManager() {
         movies={movies}
         isLoadingMovies={loadingMovies}
         initialMovieId={preselectedMovieId || undefined}
+        venues={venues}
+        defaultVenueId={selectedVenue?.id || selectedVenueId}
       />
     </div>
   );

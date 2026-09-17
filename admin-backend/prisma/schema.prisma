@@ -101,4 +101,21 @@ model Booking {
   createdAt     DateTime   @default(now())
 }
 
+model Offer {
+  id          String   @id @default(cuid())
+  title       String
+  caption     String?
+  badge       String?  @default("SPECIAL OFFER")
+  tag         String?  @default("EXCLUSIVE")
+  image       String   @db.LongText
+  icon        String?  @default("🍿")
+  validity    String?  @default("Limited Time")
+  description String   @db.Text
+  bullets     String?  @db.Text
+  publishDate String?
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
 

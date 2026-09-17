@@ -5,6 +5,8 @@ import {
   getVenues as getFallbackVenues,
   getHallsForVenue as getFallbackHalls,
   getVenueStats as getFallbackStats,
+  normalizeHallName,
+  isHallDuplicate,
 } from './mockDataService.js';
 
 let cachedVenues: TheaterVenue[] | null = null;
@@ -168,15 +170,29 @@ export const getHallsByVenueId = async (venueId: string): Promise<TheaterHall[]>
 };
 
 export const createHallInDb = async (venueId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
+  const trimmedName = data.name ? normalizeHallName(data.name) : '';
+  if (!trimmedName) {
+    throw new Error('Hall name is required');
+  }
+
   try {
+    const venueHalls = await prisma.theater.findMany({
+      where: { venueId },
+    });
+    const duplicate = venueHalls.find((h) => isHallDuplicate(trimmedName, h.name));
+
+    if (duplicate) {
+      throw new Error(`Hall "${trimmedName}" conflicts with existing "${duplicate.name}" in this venue.`);
+    }
+
     const created = await prisma.theater.create({
       data: {
         id: data.id || `h-${Date.now()}`,
         venueId,
-        name: data.name || 'New Hall',
+        name: trimmedName,
         screenType: data.screenType || 'STANDARD',
         soundSystem: data.soundSystem || 'Dolby Atmos',
-        capacity: Number(data.capacity) || 100,
+        capacity: Number(data.capacity) || 120,
         status: data.status || 'Active',
       },
     });
@@ -188,10 +204,13 @@ export const createHallInDb = async (venueId: string, data: Partial<TheaterHall>
       name: created.name,
       screenType: (created.screenType as any) || 'STANDARD',
       soundSystem: created.soundSystem || 'Dolby Atmos',
-      capacity: created.capacity || 100,
+      capacity: created.capacity || 120,
       status: (created.status as any) || 'Active',
     };
   } catch (err: any) {
+    if (err.message && (err.message.includes('already exists') || err.message.includes('conflicts with existing'))) {
+      throw err;
+    }
     console.warn('[venueService] Error creating hall in DB, using fallback:', err?.message || err);
     const { createHall: createFallback } = await import('./mockDataService.js');
     return createFallback(venueId, data);
@@ -199,11 +218,29 @@ export const createHallInDb = async (venueId: string, data: Partial<TheaterHall>
 };
 
 export const updateHallInDb = async (hallId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
+  const trimmedName = data.name ? normalizeHallName(data.name) : undefined;
   try {
+    if (trimmedName) {
+      const current = await prisma.theater.findUnique({ where: { id: hallId } });
+      const venueId = current?.venueId || data.venueId;
+      if (venueId) {
+        const venueHalls = await prisma.theater.findMany({
+          where: {
+            venueId,
+            NOT: { id: hallId },
+          },
+        });
+        const duplicate = venueHalls.find((h) => isHallDuplicate(trimmedName, h.name));
+        if (duplicate) {
+          throw new Error(`Hall "${trimmedName}" conflicts with existing "${duplicate.name}" in this venue.`);
+        }
+      }
+    }
+
     const updated = await prisma.theater.update({
       where: { id: hallId },
       data: {
-        ...(data.name ? { name: data.name } : {}),
+        ...(trimmedName ? { name: trimmedName } : {}),
         ...(data.screenType ? { screenType: data.screenType } : {}),
         ...(data.soundSystem ? { soundSystem: data.soundSystem } : {}),
         ...(data.capacity !== undefined ? { capacity: Number(data.capacity) } : {}),
@@ -218,10 +255,13 @@ export const updateHallInDb = async (hallId: string, data: Partial<TheaterHall>)
       name: updated.name,
       screenType: (updated.screenType as any) || 'STANDARD',
       soundSystem: updated.soundSystem || 'Dolby Atmos',
-      capacity: updated.capacity || 100,
+      capacity: updated.capacity || 120,
       status: (updated.status as any) || 'Active',
     };
   } catch (err: any) {
+    if (err.message && (err.message.includes('already exists') || err.message.includes('conflicts with existing'))) {
+      throw err;
+    }
     console.warn('[venueService] Error updating hall in DB, using fallback:', err?.message || err);
     const { updateHall: updateFallback } = await import('./mockDataService.js');
     return updateFallback(hallId, data);

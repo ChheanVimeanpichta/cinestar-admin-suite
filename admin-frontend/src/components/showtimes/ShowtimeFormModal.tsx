@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, Calendar, Clock } from "lucide-react";
-import { Movie } from "../../types";
+import { X, Calendar, Clock, Building2, LayoutGrid, DollarSign, Film } from "lucide-react";
+import { Movie, TheaterVenue, TheaterHall } from "../../types";
 import { ShowtimeRowData } from "../admin/ShowtimeRow";
+import { fetchHallsForVenue } from "../../services/theaterApi";
 
 interface ShowtimeFormModalProps {
   open: boolean;
@@ -11,10 +12,63 @@ interface ShowtimeFormModalProps {
   movies: Movie[];
   isLoadingMovies?: boolean;
   initialMovieId?: string;
+  venues?: TheaterVenue[];
+  defaultVenueId?: string | null;
 }
 
-const hallOptions = ["Hall 1", "Hall 2", "Hall 3", "Hall 4"];
 const formatOptions = ["IMAX", "4DX", "DOLBY", "2D", "STANDARD"];
+
+const FALLBACK_VENUES: TheaterVenue[] = [
+  {
+    id: "v-001",
+    name: "CineStar Grand Mall",
+    address: "Level 4, Grand Mall, Monivong Blvd, Phnom Penh",
+    status: "Active",
+    hallCount: 6,
+    capacity: 720,
+    formats: ["IMAX", "4DX", "DOLBY", "2D"],
+  },
+  {
+    id: "v-002",
+    name: "CineStar Riverside IMAX",
+    address: "Preah Sisowath Quay, Phnom Penh",
+    status: "Active",
+    hallCount: 4,
+    capacity: 480,
+    formats: ["IMAX", "4DX", "2D"],
+  },
+  {
+    id: "v-003",
+    name: "CineStar City Center",
+    address: "Russian Federation Blvd, Phnom Penh",
+    status: "Active",
+    hallCount: 3,
+    capacity: 360,
+    formats: ["DOLBY", "2D"],
+  },
+];
+
+const FALLBACK_HALLS: Record<string, TheaterHall[]> = {
+  "v-001": [
+    { id: "h-001", venueId: "v-001", name: "Hall 1 - IMAX", screenType: "IMAX", soundSystem: "Dolby Atmos", capacity: 180, status: "Active" },
+    { id: "h-002", venueId: "v-001", name: "Hall 2 - 4DX", screenType: "4DX", soundSystem: "Dolby Atmos", capacity: 120, status: "Active" },
+    { id: "h-003", venueId: "v-001", name: "Hall 3 - Standard", screenType: "STANDARD", soundSystem: "THX Certified", capacity: 150, status: "Active" },
+    { id: "h-004", venueId: "v-001", name: "Hall 4 - DOLBY", screenType: "DOLBY", soundSystem: "Dolby Atmos", capacity: 100, status: "Maintenance" },
+    { id: "h-005", venueId: "v-001", name: "Hall 5 - 2D", screenType: "2D", soundSystem: "Dolby Atmos", capacity: 100, status: "Active" },
+    { id: "h-006", venueId: "v-001", name: "Hall 6 - 2D", screenType: "2D", soundSystem: "THX Certified", capacity: 70, status: "Active" },
+  ],
+  "v-002": [
+    { id: "h-007", venueId: "v-002", name: "Hall 1 - IMAX", screenType: "IMAX", soundSystem: "Dolby Atmos", capacity: 160, status: "Active" },
+    { id: "h-008", venueId: "v-002", name: "Hall 2 - Standard", screenType: "STANDARD", soundSystem: "THX Certified", capacity: 140, status: "Active" },
+    { id: "h-009", venueId: "v-002", name: "Hall 3 - 4DX", screenType: "4DX", soundSystem: "Dolby Atmos", capacity: 100, status: "Active" },
+    { id: "h-010", venueId: "v-002", name: "Hall 4 - 2D", screenType: "2D", soundSystem: "Dolby Atmos", capacity: 80, status: "Active" },
+  ],
+  "v-003": [
+    { id: "h-011", venueId: "v-003", name: "Hall 1 - DOLBY", screenType: "DOLBY", soundSystem: "Dolby Atmos", capacity: 140, status: "Maintenance" },
+    { id: "h-012", venueId: "v-003", name: "Hall 2 - Standard", screenType: "STANDARD", soundSystem: "THX Certified", capacity: 120, status: "Maintenance" },
+    { id: "h-013", venueId: "v-003", name: "Hall 3 - 2D", screenType: "2D", soundSystem: "Dolby Atmos", capacity: 100, status: "Active" },
+  ],
+};
 
 export default function ShowtimeFormModal({
   open,
@@ -24,44 +78,129 @@ export default function ShowtimeFormModal({
   movies,
   isLoadingMovies = false,
   initialMovieId,
+  venues = [],
+  defaultVenueId,
 }: ShowtimeFormModalProps) {
+  const activeVenues = venues.length > 0 ? venues : FALLBACK_VENUES;
+
   const [selectedMovieId, setSelectedMovieId] = useState("");
-  const [hall, setHall] = useState("Hall 1");
+  const [venueId, setVenueId] = useState<string>("");
+  const [halls, setHalls] = useState<TheaterHall[]>([]);
+  const [loadingHalls, setLoadingHalls] = useState(false);
+  const [hallName, setHallName] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [format, setFormat] = useState("2D");
   const [price, setPrice] = useState<number>(12);
+  const [seatsTotal, setSeatsTotal] = useState<number>(120);
 
   const isEditing = !!editData;
 
-  const resetForm = () => {
-    setSelectedMovieId("");
-    setHall("Hall 1");
-    setDate("");
-    setTime("");
-    setFormat("2D");
-    setPrice(12);
-  };
-
   useEffect(() => {
+    if (!open) return;
+
     if (editData) {
-      setHall(editData.hall);
-      setTime(editData.time);
-      setFormat(editData.format);
+      const matchedVenue = activeVenues.find(
+        (v) => v.id === editData.venueId || v.name.toLowerCase() === editData.theaterName?.toLowerCase()
+      );
+      const initialVenue = matchedVenue || activeVenues[0];
+      setVenueId(initialVenue?.id || "v-001");
+
+      setHallName(editData.hall || "Hall 1");
+      setTime(editData.time || "18:00");
+      setFormat(editData.format || "2D");
       setPrice(12);
+      setSeatsTotal(editData.seatsTotal || 120);
+
       const movie = movies.find((m) => m.title === editData.title);
       if (movie) setSelectedMovieId(movie.id);
+
+      setDate(new Date().toISOString().slice(0, 10));
     } else {
-      resetForm();
-      if (initialMovieId) {
-        setSelectedMovieId(initialMovieId);
-        const m = movies.find((mov) => mov.id === initialMovieId);
-        if (m?.badge && formatOptions.includes(m.badge.toUpperCase())) {
-          setFormat(m.badge.toUpperCase());
+      const initialVId = defaultVenueId && activeVenues.some((v) => v.id === defaultVenueId)
+        ? defaultVenueId
+        : activeVenues[0]?.id || "v-001";
+
+      setVenueId(initialVId);
+      setSelectedMovieId(initialMovieId || (movies[0]?.id ?? ""));
+      setDate(new Date().toISOString().slice(0, 10));
+      setTime("18:30");
+      setPrice(12);
+    }
+  }, [editData, open, defaultVenueId, initialMovieId]);
+
+  useEffect(() => {
+    if (!venueId) return;
+
+    let isMounted = true;
+    const loadHalls = async () => {
+      setLoadingHalls(true);
+      try {
+        const foundVenue = activeVenues.find((v) => v.id === venueId);
+        if (foundVenue?.halls && foundVenue.halls.length > 0) {
+          if (isMounted) {
+            setHalls(foundVenue.halls);
+            applyDefaultHall(foundVenue.halls);
+          }
+          return;
+        }
+
+        const apiHalls = await fetchHallsForVenue(venueId);
+        if (isMounted) {
+          const list = apiHalls.length > 0 ? apiHalls : (FALLBACK_HALLS[venueId] || []);
+          setHalls(list);
+          applyDefaultHall(list);
+        }
+      } catch {
+        if (isMounted) {
+          const list = FALLBACK_HALLS[venueId] || [];
+          setHalls(list);
+          applyDefaultHall(list);
+        }
+      } finally {
+        if (isMounted) setLoadingHalls(false);
+      }
+    };
+
+    const applyDefaultHall = (hallList: TheaterHall[]) => {
+      if (hallList.length === 0) return;
+      if (editData && hallList.some((h) => h.name === editData.hall)) {
+        setHallName(editData.hall);
+        const matched = hallList.find((h) => h.name === editData.hall);
+        if (matched) {
+          setSeatsTotal(matched.capacity || 120);
+        }
+      } else {
+        const first = hallList[0];
+        setHallName(first.name);
+        setSeatsTotal(first.capacity || 120);
+        if (first.screenType && formatOptions.includes(first.screenType.toUpperCase())) {
+          setFormat(first.screenType.toUpperCase());
         }
       }
+    };
+
+    loadHalls();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [venueId]);
+
+  const handleVenueChange = (newVenueId: string) => {
+    setVenueId(newVenueId);
+  };
+
+  const handleHallChange = (newHallName: string) => {
+    setHallName(newHallName);
+    const matched = halls.find((h) => h.name === newHallName);
+    if (matched) {
+      setSeatsTotal(matched.capacity || 120);
+      if (matched.screenType && formatOptions.includes(matched.screenType.toUpperCase())) {
+        setFormat(matched.screenType.toUpperCase());
+      }
     }
-  }, [editData, open, movies, initialMovieId]);
+  };
 
   const handleMovieSelect = (movieId: string) => {
     setSelectedMovieId(movieId);
@@ -74,6 +213,7 @@ export default function ShowtimeFormModal({
   if (!open) return null;
 
   const selectedMovie = movies.find((m) => m.id === selectedMovieId);
+  const selectedVenue = activeVenues.find((v) => v.id === venueId) || activeVenues[0];
 
   function computeTimeLabel(dateStr: string): string {
     if (!dateStr) return "";
@@ -89,20 +229,23 @@ export default function ShowtimeFormModal({
     e.preventDefault();
     if (!selectedMovie || !date || !time) return;
 
+    const currentHall = halls.find((h) => h.name === hallName);
     const showtime: ShowtimeRowData = {
       id: editData?.id || `sc-${Date.now()}`,
       posterUrl: selectedMovie.poster || "",
       title: selectedMovie.title,
       durationMins: selectedMovie.durationMins || 120,
       genre: selectedMovie.genre || "",
-      theaterName: hall,
-      hall,
+      theaterName: selectedVenue?.name || "Cinema Venue",
+      venueId: selectedVenue?.id,
+      hall: hallName || "Hall 1",
+      hallId: currentHall?.id,
       time,
       timeLabel: computeTimeLabel(date),
       format,
       seatsFilled: editData?.seatsFilled || 0,
-      seatsTotal: 64,
-      status: "ON SALE",
+      seatsTotal: currentHall?.capacity || seatsTotal || 120,
+      status: editData?.status || "ON SALE",
     };
     onSave(showtime);
     onClose();
@@ -208,35 +351,79 @@ export default function ShowtimeFormModal({
             )}
           </div>
 
-          {/* Hall + Format */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
-                Theater Hall
+          {/* Theater (Venue) Selection */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant flex items-center gap-1.5">
+                <Building2 size={13} className="text-accent" />
+                Theater (Cinema Venue) *
               </label>
+              <span className="text-[11px] font-mono text-onSurfaceVariant">
+                {activeVenues.length} Venues
+              </span>
+            </div>
+            <select
+              value={venueId}
+              onChange={(e) => handleVenueChange(e.target.value)}
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface outline-none focus:border-accent transition-colors cursor-pointer"
+            >
+              {activeVenues.map((v) => (
+                <option key={v.id} value={v.id} className="bg-[#1a1a1a] text-onSurface">
+                  {v.name} ({v.hallCount || 0} Halls)
+                </option>
+              ))}
+            </select>
+            {selectedVenue && (
+              <p className="text-[11px] text-onSurfaceVariant/70 mt-1 pl-0.5 truncate">
+                📍 {selectedVenue.address || "Cinema branch"}
+              </p>
+            )}
+          </div>
+
+          {/* Hall & Screen Format */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-mono uppercase text-onSurfaceVariant flex items-center gap-1.5">
+                  <LayoutGrid size={13} className="text-accent" />
+                  Cinema Hall in Venue *
+                </label>
+                {loadingHalls && (
+                  <span className="text-[10px] text-accent font-mono animate-pulse">Loading...</span>
+                )}
+              </div>
               <select
-                value={hall}
-                onChange={(e) => setHall(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer"
+                value={hallName}
+                onChange={(e) => handleHallChange(e.target.value)}
+                required
+                disabled={loadingHalls || halls.length === 0}
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface outline-none focus:border-accent transition-colors cursor-pointer disabled:opacity-50"
               >
-                {hallOptions.map((h) => (
-                  <option key={h} value={h} className="bg-surface">
-                    {h}
-                  </option>
-                ))}
+                {halls.length === 0 ? (
+                  <option value="" className="bg-[#1a1a1a]">No halls configured</option>
+                ) : (
+                  halls.map((h) => (
+                    <option key={h.id} value={h.name} className="bg-[#1a1a1a]">
+                      {h.name} ({h.capacity} seats • {h.screenType})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
+
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
-                Format
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5 flex items-center gap-1.5">
+                <Film size={13} className="text-accent" />
+                Screen Format *
               </label>
               <select
                 value={format}
                 onChange={(e) => setFormat(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors cursor-pointer"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface outline-none focus:border-accent transition-colors cursor-pointer"
               >
                 {formatOptions.map((f) => (
-                  <option key={f} value={f} className="bg-surface">
+                  <option key={f} value={f} className="bg-[#1a1a1a]">
                     {f}
                   </option>
                 ))}
@@ -245,52 +432,66 @@ export default function ShowtimeFormModal({
           </div>
 
           {/* Date + Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2 flex items-center gap-1.5">
-                <Calendar size={12} />
-                Screening Date
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5 flex items-center gap-1.5">
+                <Calendar size={13} className="text-accent" />
+                Screening Date *
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors [color-scheme:dark]"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface outline-none focus:border-accent transition-colors [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2 flex items-center gap-1.5">
-                <Clock size={12} />
-                Start Time
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5 flex items-center gap-1.5">
+                <Clock size={13} className="text-accent" />
+                Start Time *
               </label>
               <input
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
                 required
-                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface outline-none focus:border-accent transition-colors [color-scheme:dark]"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface outline-none focus:border-accent transition-colors [color-scheme:dark]"
               />
             </div>
           </div>
 
-          {/* Price */}
-          <div>
-            <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
-              Ticket Price ($)
-            </label>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) =>
-                setPrice(e.target.value ? parseFloat(e.target.value) : 0)
-              }
-              min="0"
-              step="0.5"
-              required
-              placeholder="12"
-              className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
-            />
+          {/* Price & Capacity */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5 flex items-center gap-1.5">
+                <DollarSign size={13} className="text-accent" />
+                Ticket Price (USD) *
+              </label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) =>
+                  setPrice(e.target.value ? parseFloat(e.target.value) : 0)
+                }
+                min="0"
+                step="0.5"
+                required
+                placeholder="12"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3.5 py-2.5 text-sm text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5">
+                Hall Capacity (Seats)
+              </label>
+              <input
+                type="number"
+                value={seatsTotal}
+                disabled
+                className="w-full bg-white/5 border border-white/5 rounded-lg px-3.5 py-2.5 text-sm text-onSurface/70 outline-none cursor-not-allowed font-mono"
+              />
+            </div>
           </div>
 
           {/* Actions */}

@@ -315,235 +315,202 @@ export default function MovieManagement() {
     paginatedMovies.every((m) => selectedIds.has(m.id));
 
   return (
-    <div className="h-full flex flex-col -m-4 md:-m-8 bg-surface text-onSurface">
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-4 md:py-8">
-        {/* Header */}
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-3 font-heading font-black text-4xl uppercase text-onSurface">
-              <Clapperboard size={30} className="text-accent" />
-              Movie Roster
-            </h1>
-            <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
-              Manage the cinematic catalog. Filter by genre, update release
-              status, or add new titles to the lineup.
-            </p>
-            <p className="font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mt-2">
-              {filtered.length} of {movies.length} titles
-            </p>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-3">
-            <button
-              onClick={loadMovies}
-              disabled={loading}
-              title="Refresh movies from database"
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-accent" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            {isAdmin ? (
-              <button
-                onClick={() => {
-                  setEditingMovie(null);
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-onSurface shadow-sm shadow-red-950 transition-colors hover:bg-red-500"
-              >
-                <Plus className="h-4 w-4" />
-                Add Movie
-              </button>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono font-medium text-emerald-300">
-                Staff (Read-Only)
-              </span>
-            )}
-          </div>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-3 font-heading font-black text-3xl sm:text-4xl uppercase text-onSurface">
+            <Clapperboard size={30} className="text-accent" />
+            Movie Management
+          </h1>
+          <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
+            Manage the cinematic catalog. Filter by genre, update release
+            status, or add new titles to the lineup.
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mt-2">
+            {filtered.length} of {movies.length} titles
+          </p>
         </div>
 
-        {/* Feedback Alert Toast */}
-        {feedback && (
-          <div
-            className={`mb-4 flex items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm transition-all animate-in fade-in duration-200 ${
-              feedback.type === "success"
-                ? "border border-green-500/30 bg-green-500/10 text-green-300"
-                : "border border-red-500/30 bg-red-500/10 text-red-300"
+        <div className="flex flex-shrink-0 items-center gap-3">
+          <button
+            onClick={loadMovies}
+            disabled={loading}
+            title="Refresh movies from database"
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin text-accent" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          {isAdmin ? (
+            <button
+              onClick={() => {
+                setEditingMovie(null);
+                setShowModal(true);
+              }}
+              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-onSurface shadow-sm shadow-red-950 transition-colors hover:bg-red-500"
+            >
+              <Plus className="h-4 w-4" />
+              Add Movie
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-mono font-medium text-emerald-300">
+              Staff (Read-Only)
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Feedback Alert Toast */}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm transition-all animate-in fade-in duration-200 ${
+            feedback.type === "success"
+              ? "border border-green-500/30 bg-green-500/10 text-green-300"
+              : "border border-red-500/30 bg-red-500/10 text-red-300"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedback.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
+            ) : (
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+            )}
+            <span className="font-medium">{feedback.message}</span>
+          </div>
+          <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-75">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-variant/60 p-3">
+        <div className="relative min-w-[260px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-onSurfaceVariant" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by title..."
+            className="w-full rounded-lg border border-white/10 bg-surface py-2 pl-9 pr-3 text-sm text-onSurface placeholder:text-onSurfaceVariant outline-none ring-red-600/40 focus:ring-2"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick Status Filter Segmented Control (matching Offers, Booking Log, Theaters) */}
+          <div className="flex items-center p-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px]">
+            {[
+              { id: "", label: "ALL" },
+              { id: "now-showing", label: "Now Showing" },
+              { id: "coming-soon", label: "Coming Soon" },
+            ].map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => setFilterStatus(st.id as any)}
+                className={`px-3 py-1.5 rounded-md font-medium transition ${
+                  filterStatus === st.id
+                    ? "bg-red-600 text-white font-semibold shadow-sm"
+                    : "text-onSurfaceVariant hover:text-onSurface"
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => { loadMovies(); }}
+            title="Refresh movie catalog & stats"
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-xs font-medium text-onSurface hover:bg-white/10 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-red-400" : ""}`} />
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={`flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium transition-colors ${
+              showFilter
+                ? "bg-red-600 text-white font-semibold shadow-sm"
+                : "bg-surface-variant text-onSurface hover:bg-white/10"
             }`}
           >
-            <div className="flex items-center gap-2">
-              {feedback.type === "success" ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />
-              ) : (
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-              )}
-              <span className="font-medium">{feedback.message}</span>
-            </div>
-            <button onClick={() => setFeedback(null)} className="p-1 hover:opacity-75">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+            <SlidersHorizontal className="h-3.5 w-3.5" />
+            More Filters
+          </button>
+          {filterBadge && (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-600/40">
+              {filterBadge}
+              <button onClick={() => setFilterBadge("")}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+          {filterGenre && (
+            <span className="inline-flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-600/40">
+              {filterGenre}
+              <button onClick={() => setFilterGenre("")}>
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+        </div>
+      </div>
 
-        {/* Toolbar */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-variant/60 p-3">
-          <div className="relative min-w-[260px] flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-onSurfaceVariant" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by title..."
-              className="w-full rounded-lg border border-white/10 bg-surface py-2 pl-9 pr-3 text-sm text-onSurface placeholder:text-onSurfaceVariant outline-none ring-red-600/40 focus:ring-2"
-            />
+      {/* Filter bar */}
+      {showFilter && (
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl border border-white/10 bg-surface-variant/60">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
+              Badge:
+            </span>
+            <div className="flex items-center p-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px] flex-wrap">
+              <button
+                type="button"
+                onClick={() => setFilterBadge("")}
+                className={`px-2.5 py-1 rounded-md font-medium transition ${
+                  !filterBadge
+                    ? "bg-red-600 text-white font-semibold shadow-sm"
+                    : "text-onSurfaceVariant hover:text-onSurface"
+                }`}
+              >
+                All
+              </button>
+              {badgeOptions.map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setFilterBadge(b === filterBadge ? "" : b)}
+                  className={`px-2.5 py-1 rounded-md font-medium transition ${
+                    filterBadge === b
+                      ? "bg-red-600 text-white font-semibold shadow-sm"
+                      : "text-onSurfaceVariant hover:text-onSurface"
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => { loadMovies(); }}
-              title="Refresh movie catalog & stats"
-              disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-xs font-medium text-onSurface hover:bg-white/10 transition-colors disabled:opacity-50"
+            <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
+              Genre:
+            </span>
+            <select
+              value={filterGenre}
+              onChange={(e) => setFilterGenre(e.target.value)}
+              className="bg-surface-variant border border-white/10 rounded px-3 py-1.5 text-xs text-onSurface outline-none focus:border-red-600/40 cursor-pointer"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-red-400" : ""}`} />
-              Refresh
-            </button>
-            <button
-              onClick={() => setShowFilter(!showFilter)}
-              className={`flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium transition-colors ${
-                showFilter
-                  ? "bg-red-600/20 text-red-400 ring-1 ring-inset ring-red-600/40"
-                  : "bg-surface-variant text-onSurface hover:bg-surface-variant"
-              }`}
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filters
-            </button>
-            {filterBadge && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-600/40">
-                {filterBadge}
-                <button onClick={() => setFilterBadge("")}>
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {filterGenre && (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-red-600/20 px-3 py-2 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-600/40">
-                {filterGenre}
-                <button onClick={() => setFilterGenre("")}>
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
-            {filterStatus && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium ring-1 ring-inset ${
-                  filterStatus === "now-showing"
-                    ? "bg-emerald-500/20 text-emerald-400 ring-emerald-500/40"
-                    : "bg-cyan-500/20 text-cyan-400 ring-cyan-500/40"
-                }`}
-              >
-                {filterStatus === "now-showing" ? "Now Showing" : "Coming Soon"}
-                <button onClick={() => setFilterStatus("")}>
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            )}
+              <option value="">All Genres</option>
+              {genres.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
           </div>
-        </div>
-
-        {/* Filter bar */}
-        {showFilter && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 p-4 rounded-xl border border-white/10 bg-surface-variant/60">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
-                Status:
-              </span>
-              <div className="flex gap-1 flex-wrap">
-                <button
-                  onClick={() => setFilterStatus("")}
-                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
-                    !filterStatus
-                      ? "bg-red-600/20 text-red-400 ring-1 ring-inset ring-red-600/40"
-                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() =>
-                    setFilterStatus(filterStatus === "now-showing" ? "" : "now-showing")
-                  }
-                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
-                    filterStatus === "now-showing"
-                      ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-inset ring-emerald-500/40"
-                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
-                  }`}
-                >
-                  Now Showing
-                </button>
-                <button
-                  onClick={() =>
-                    setFilterStatus(filterStatus === "coming-soon" ? "" : "coming-soon")
-                  }
-                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
-                    filterStatus === "coming-soon"
-                      ? "bg-cyan-500/20 text-cyan-400 ring-1 ring-inset ring-cyan-500/40"
-                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
-                  }`}
-                >
-                  Coming Soon
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
-                Badge:
-              </span>
-              <div className="flex gap-1 flex-wrap">
-                <button
-                  onClick={() => setFilterBadge("")}
-                  className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
-                    !filterBadge
-                      ? "bg-red-600/20 text-red-400 ring-1 ring-inset ring-red-600/40"
-                      : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
-                  }`}
-                >
-                  All
-                </button>
-                {badgeOptions.map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => setFilterBadge(b === filterBadge ? "" : b)}
-                    className={`px-2.5 py-1 rounded text-[10px] uppercase font-medium transition-colors ${
-                      filterBadge === b
-                        ? "bg-red-600/20 text-red-400 ring-1 ring-inset ring-red-600/40"
-                        : "text-onSurfaceVariant hover:text-onSurface hover:bg-surface-variant"
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase text-onSurfaceVariant whitespace-nowrap">
-                Genre:
-              </span>
-              <select
-                value={filterGenre}
-                onChange={(e) => setFilterGenre(e.target.value)}
-                className="bg-surface-variant border border-white/10 rounded px-3 py-1.5 text-xs text-onSurface outline-none focus:border-red-600/40 cursor-pointer"
-              >
-                <option value="">All</option>
-                {genres.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {(filterBadge || filterGenre || filterStatus) && (
               <button
@@ -673,7 +640,6 @@ export default function MovieManagement() {
             </div>
           </div>
         </div>
-      </div>
 
       <MovieFormModal
         open={showModal}

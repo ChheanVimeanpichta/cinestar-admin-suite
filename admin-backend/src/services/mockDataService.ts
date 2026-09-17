@@ -495,14 +495,59 @@ export const deleteVenue = async (id: string): Promise<boolean> => {
 export const getHallsForVenue = async (venueId: string): Promise<TheaterHall[]> =>
   halls.filter((h) => h.venueId === venueId);
 
+export const normalizeHallName = (val: string): string => {
+  return val
+    .trim()
+    .replace(/\b(hall)\s*(\d+)/gi, (_match, _p1, p2) => {
+      return `Hall ${p2}`;
+    });
+};
+
+export const getHallKey = (rawName: string): string => {
+  const clean = rawName.trim().toLowerCase();
+  if (!clean) return "";
+
+  const prefixMatch = clean.match(/^([a-z\s]+?)\s*(\d+)/i);
+  if (prefixMatch) {
+    const word = prefixMatch[1].trim().replace(/\s+/g, " ");
+    const num = parseInt(prefixMatch[2], 10);
+    return `${word} ${num}`;
+  }
+
+  return clean.replace(/[^a-z0-9]/g, "");
+};
+
+export const isHallDuplicate = (inputName: string, existingHallName: string): boolean => {
+  const inputClean = inputName.trim().toLowerCase();
+  const existClean = existingHallName.trim().toLowerCase();
+  if (!inputClean || !existClean) return false;
+
+  if (inputClean.replace(/\s+/g, " ") === existClean.replace(/\s+/g, " ")) {
+    return true;
+  }
+
+  const inputKey = getHallKey(inputName);
+  const existKey = getHallKey(existingHallName);
+
+  return !!(inputKey && existKey && inputKey === existKey);
+};
+
 export const createHall = async (venueId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
+  const trimmedName = normalizeHallName(data.name || "New Hall");
+  const duplicate = halls.find(
+    (h) => h.venueId === venueId && isHallDuplicate(trimmedName, h.name)
+  );
+  if (duplicate) {
+    throw new Error(`Hall "${trimmedName}" conflicts with existing "${duplicate.name}" in this venue.`);
+  }
+
   const newHall: TheaterHall = {
     id: `h-${Date.now()}`,
     venueId,
-    name: data.name || "New Hall",
+    name: trimmedName,
     screenType: data.screenType || "STANDARD",
     soundSystem: data.soundSystem || "Dolby Atmos",
-    capacity: Number(data.capacity) || 100,
+    capacity: Number(data.capacity) || 120,
     status: data.status || "Active",
   };
   halls.push(newHall);
@@ -519,6 +564,19 @@ export const createHall = async (venueId: string, data: Partial<TheaterHall>): P
 export const updateHall = async (hallId: string, data: Partial<TheaterHall>): Promise<TheaterHall> => {
   const index = halls.findIndex((h) => h.id === hallId);
   if (index === -1) throw new Error("Hall not found");
+
+  if (data.name) {
+    const trimmedName = normalizeHallName(data.name);
+    const venueId = halls[index].venueId;
+    const duplicate = halls.find(
+      (h) => h.venueId === venueId && h.id !== hallId && isHallDuplicate(trimmedName, h.name)
+    );
+    if (duplicate) {
+      throw new Error(`Hall "${trimmedName}" conflicts with existing "${duplicate.name}" in this venue.`);
+    }
+    data.name = trimmedName;
+  }
+
   halls[index] = { ...halls[index], ...data };
 
   const venue = venues.find((v) => v.id === halls[index].venueId);

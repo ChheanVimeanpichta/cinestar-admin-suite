@@ -18,7 +18,9 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  Calendar,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { TheaterVenue, TheaterHall } from "../../types";
 import {
   fetchTheaterVenues,
@@ -528,6 +530,17 @@ export default function Theaters() {
                   ))}
                 </div>
 
+                {selectedVenue && (
+                  <Link
+                    to={`/admin/showtimes?venueId=${selectedVenue.id}`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-white/10 hover:border-white/20 text-onSurface text-xs font-medium transition hover:bg-white/5 shrink-0"
+                    title={`View and schedule showtimes in ${selectedVenue.name}`}
+                  >
+                    <Calendar size={13} className="text-accent" />
+                    <span>Showtimes</span>
+                  </Link>
+                )}
+
                 {isAdmin && (
                   <button
                     onClick={handleOpenAddHall}
@@ -923,6 +936,7 @@ export default function Theaters() {
           onSave={handleSaveHall}
           venueName={selectedVenue?.name || ""}
           editHall={editingHall}
+          existingHalls={halls}
           isSaving={isSavingHall}
         />
       )}

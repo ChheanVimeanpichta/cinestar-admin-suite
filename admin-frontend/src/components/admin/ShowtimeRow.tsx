@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreVertical, Check, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Check, Pencil, Trash2, Building2 } from "lucide-react";
 
 export type ShowtimeStatus = "ALMOST FULL" | "ON SALE" | "CONFLICT";
 
@@ -10,7 +10,9 @@ export interface ShowtimeRowData {
   durationMins: number;
   genre: string;
   theaterName: string;
+  venueId?: string;
   hall: string;
+  hallId?: string;
   time: string;
   timeLabel: string; // e.g. "Today"
   format: string;
@@ -90,8 +92,11 @@ export default function ShowtimeRow({
 
       {/* Theater & hall */}
       <td className="pr-4">
-        <p className="text-onSurface text-sm">{data.theaterName}</p>
-        <p className="text-onSurfaceVariant text-xs">{data.hall}</p>
+        <p className="text-onSurface text-sm font-medium flex items-center gap-1.5">
+          <Building2 size={13} className="text-red-400 shrink-0" />
+          <span>{data.theaterName || "Cinema Venue"}</span>
+        </p>
+        <p className="text-onSurfaceVariant text-xs font-mono mt-0.5 pl-4">{data.hall}</p>
       </td>
 
       {/* Time */}

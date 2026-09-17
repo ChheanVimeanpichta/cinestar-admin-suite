@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Users as UsersIcon,
   Building2,
+  Tag,
   LogOut,
 } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
@@ -17,6 +18,7 @@ const links = [
   { label: "Booking Log", to: "/admin/bookings", icon: <ClipboardList size={16} /> },
   { label: "Users", to: "/admin/users", icon: <UsersIcon size={16} /> },
   { label: "Theaters", to: "/admin/theaters", icon: <Building2 size={16} /> },
+  { label: "Offers", to: "/admin/offers", icon: <Tag size={16} /> },
 ];
 
 export default function AdminSidebar() {
