@@ -1,5 +1,6 @@
 import { getAllAdmins } from './authService.js';
 import { getAllCustomers } from './customerService.js';
+import { prisma } from '../config/db.js';
 
 export interface Movie {
   id: string;
@@ -700,8 +701,82 @@ export const getShowtimeStats = async () => {
   return { todaysShows, totalCapacityPct, conflicts, activeHalls };
 };
 
-export const getScreeningsForMovie = async (movieId: string): Promise<Screening[]> =>
-  screenings.filter((s) => s.movieId === movieId);
+export const getScreeningsForMovie = async (movieId: string): Promise<any[]> => {
+  const normId = (movieId || '').trim().toLowerCase();
+
+  const defaultHallToVenue: Record<string, { venueId: string; venueName: string; hallName: string }> = {
+    'th-hall-1': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 1 - Standard' },
+    'th-hall-2': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 2 - Standard' },
+    'th-hall-3': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 3 - IMAX' },
+    'th-hall-4': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 4 - 4DX' },
+    'th-hall-5': { venueId: 'v-002', venueName: 'CineStar Riverside', hallName: 'Hall 5 - VIP Lounge' },
+    'th-hall-6': { venueId: 'v-002', venueName: 'CineStar Riverside', hallName: 'Hall 6 - Dolby Atmos' },
+    'th-hall-7': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 7 - ScreenX' },
+    'th-hall-8': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 8 - Laser 2D' },
+  };
+
+  try {
+    const dbScreenings = await prisma.screening.findMany({
+      where: {
+        OR: [
+          { movieId: movieId },
+          { movie: { id: movieId } },
+          { movie: { title: { contains: movieId } } },
+        ],
+      },
+      include: {
+        theater: {
+          include: { venue: true },
+        },
+        movie: true,
+      },
+    });
+
+    if (dbScreenings.length > 0) {
+      return dbScreenings.map((s) => {
+        const mapped = defaultHallToVenue[s.theaterId] || {};
+        const vName = s.theater?.venue?.name || mapped.venueName || 'CineStar Downtown';
+        const vId = s.theater?.venueId || s.theater?.venue?.id || mapped.venueId || 'v-001';
+        return {
+          id: s.id,
+          movieId: s.movieId,
+          theaterId: s.theaterId,
+          venueId: vId,
+          venueName: vName,
+          theaterName: vName,
+          date: s.date,
+          time: s.time,
+          format: s.format as any,
+          hall: s.hall || s.theater?.name || mapped.hallName || 'Standard Hall',
+          price: s.price,
+        };
+      });
+    }
+  } catch (err) {
+    console.warn('[mockDataService] Failed to query Prisma screenings:', err);
+  }
+
+  const memScreenings = screenings.filter(
+    (s) =>
+      s.movieId.toLowerCase() === normId ||
+      movies.find((m) => m.id === s.movieId)?.title.toLowerCase().includes(normId)
+  );
+
+  return memScreenings.map((s) => {
+    const mapped = defaultHallToVenue[s.theaterId] || {
+      venueId: 'v-001',
+      venueName: 'CineStar Downtown',
+      hallName: s.hall || 'Hall 1',
+    };
+    return {
+      ...s,
+      venueId: mapped.venueId,
+      venueName: mapped.venueName,
+      theaterName: mapped.venueName,
+      hall: mapped.hallName,
+    };
+  });
+};
 
 export const getSeatsForScreening = async (screeningId: string): Promise<Seat[]> => {
   const screening = screenings.find((s) => s.id === screeningId);
