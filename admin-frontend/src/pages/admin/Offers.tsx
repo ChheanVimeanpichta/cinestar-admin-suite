@@ -503,7 +503,7 @@ export default function Offers() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="flex flex-col gap-6">
       {/* Toast Feedback Notification */}
       {feedback && (
         <div
@@ -531,50 +531,51 @@ export default function Offers() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-2 rounded-lg bg-accent/15 text-accent border border-accent/25">
-              <Tag size={20} />
-            </span>
-            <h1 className="text-2xl font-heading font-bold text-onSurface">Offers</h1>
-          </div>
-          <p className="text-sm text-onSurfaceVariant font-body">
+          <h1 className="flex items-center gap-3 font-heading font-black text-3xl sm:text-4xl uppercase text-onSurface">
+            <Tag size={30} className="text-accent" />
+            Offers &amp; Promotions
+          </h1>
+          <p className="text-onSurfaceVariant text-body-md mt-2 max-w-xl">
             Manage cinema promotions and deals displayed on the booking platform.
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mt-2">
+            {filteredOffers.length} of {offers.length} active deals
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleManualRefresh}
             disabled={isRefreshing || loading}
             title="Refresh offers from database"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-white/10 bg-surface text-onSurfaceVariant hover:text-onSurface hover:bg-white/5 transition disabled:opacity-50 text-sm font-medium"
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-surface-variant px-3 py-2 text-sm font-medium text-onSurface transition-colors hover:bg-white/10 disabled:opacity-50"
           >
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin text-accent" : ""} />
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-accent" : ""}`} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
 
           <button
             type="button"
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-onSurface hover:bg-accent/90 transition shadow-lg shadow-accent/20 text-sm font-medium font-heading"
+            className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-onSurface shadow-sm shadow-red-950 transition-colors hover:bg-red-500"
           >
-            <Plus size={16} />
+            <Plus className="h-4 w-4" />
             <span>Add Offer</span>
           </button>
         </div>
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="p-3.5 rounded-xl bg-surface border border-white/10 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="relative w-full md:w-80">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-onSurfaceVariant" />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-surface-variant/60 p-3">
+        <div className="relative min-w-[260px] flex-1">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-onSurfaceVariant" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search deals, tags, badges..."
-            className="w-full pl-10 pr-4 py-2 bg-black/40 border border-white/10 rounded-lg text-sm text-onSurface placeholder:text-onSurfaceVariant/60 focus:outline-none focus:border-accent transition"
+            className="w-full rounded-lg border border-white/10 bg-surface py-2 pl-10 pr-4 text-sm text-onSurface placeholder:text-onSurfaceVariant outline-none ring-red-600/40 focus:ring-2"
           />
           {search && (
             <button
@@ -586,15 +587,16 @@ export default function Offers() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          <div className="flex items-center bg-black/40 border border-white/10 rounded-lg p-1 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center p-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px]">
             {(["All", "Active", "Inactive"] as const).map((status) => (
               <button
                 key={status}
+                type="button"
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1.5 rounded-md font-medium transition ${
                   statusFilter === status
-                    ? "bg-accent text-onSurface shadow-sm"
+                    ? "bg-red-600 text-white font-semibold shadow-sm"
                     : "text-onSurfaceVariant hover:text-onSurface"
                 }`}
               >
@@ -700,7 +702,7 @@ export default function Offers() {
                             />
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-onSurface leading-snug truncate max-w-xs">
+                            <div className="font-body font-medium text-sm text-onSurface leading-snug truncate max-w-xs">
                               {offer.title}
                             </div>
                             {offer.caption && (
@@ -715,57 +717,65 @@ export default function Offers() {
                       {/* Badge / Category */}
                       <td className="px-4 py-3 align-middle">
                         {offer.badge ? (
-                          <span className="inline-flex rounded-md bg-surface-variant px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-onSurface border border-white/5">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-red-500/15 text-red-300 border border-red-500/30 uppercase tracking-wide">
                             {offer.badge}
                           </span>
                         ) : (
-                          <span className="text-onSurfaceVariant">—</span>
+                          <span className="text-onSurfaceVariant font-mono text-xs">—</span>
                         )}
                       </td>
 
-                      {/* Status Pill */}
+                      {/* Status Button */}
                       <td className="px-4 py-3 align-middle">
-                        {isActive ? (
-                          <span className="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold bg-zinc-500/10 text-zinc-400 ring-1 ring-zinc-500/20">
-                            Inactive
-                          </span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(offer)}
+                          title={`Status: ${offer.status}. Click to set as ${isActive ? "Inactive" : "Active"}`}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium border transition-all hover:scale-105 cursor-pointer ${
+                            isActive
+                              ? "bg-green-500/15 border-green-500/30 text-green-400 hover:bg-green-500/25"
+                              : "bg-yellow-500/15 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/25"
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isActive ? "bg-green-400" : "bg-yellow-400"
+                            }`}
+                          />
+                          {offer.status || "Active"}
+                        </button>
                       </td>
 
                       {/* Discount / Tag */}
                       <td className="px-4 py-3 align-middle">
                         {offer.tag ? (
-                          <span className="inline-flex items-center rounded-md bg-surface-variant px-2.5 py-1 text-xs font-semibold text-onSurface border border-white/5">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-white/10 text-onSurface border border-white/10">
                             {offer.tag}
                           </span>
                         ) : (
-                          <span className="text-onSurfaceVariant">—</span>
+                          <span className="text-onSurfaceVariant font-mono text-xs">—</span>
                         )}
                       </td>
 
                       {/* Validity */}
-                      <td className="px-4 py-3 align-middle text-onSurfaceVariant text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 align-middle text-onSurfaceVariant font-mono text-xs whitespace-nowrap">
                         {offer.validity || "—"}
                       </td>
 
                       {/* Perks Count */}
-                      <td className="px-4 py-3 align-middle text-onSurfaceVariant text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 align-middle text-onSurface font-mono text-xs whitespace-nowrap">
                         {offer.bullets && offer.bullets.length > 0 ? (
                           <span className="inline-flex items-center gap-1 text-onSurface">
-                            <span className="font-mono font-medium">{offer.bullets.length}</span> perk
+                            <span className="font-semibold">{offer.bullets.length}</span> perk
                             {offer.bullets.length !== 1 ? "s" : ""}
                           </span>
                         ) : (
-                          "—"
+                          <span className="text-onSurfaceVariant font-mono">—</span>
                         )}
                       </td>
 
                       {/* Release / Publish Date */}
-                      <td className="px-4 py-3 align-middle text-onSurface text-xs whitespace-nowrap">
+                      <td className="px-4 py-3 align-middle text-onSurface font-mono text-xs whitespace-nowrap">
                         {offer.publishDate || "—"}
                       </td>
 

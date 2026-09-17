@@ -78,10 +78,13 @@ export interface TheaterVenue {
   id: string;
   name: string;
   address: string;
-  imageUrl: string;
+  imageUrl?: string;
   status: VenueStatus;
   hallCount: number;
   capacity: number;
+  formats?: string[];
+  tags?: string[];
+  halls?: TheaterHall[];
 }
 
 export type HallScreenType = "IMAX" | "4DX" | "STANDARD" | "DOLBY" | "2D";

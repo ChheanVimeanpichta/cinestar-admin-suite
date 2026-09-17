@@ -14,6 +14,14 @@ interface MovieTableProps {
   emptyMessage?: string;
 }
 
+const formatBadgeStyles: Record<string, string> = {
+  IMAX: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  "4DX": "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  CineStar: "bg-red-500/15 text-red-300 border-red-500/30",
+  DOLBY: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+  "2D": "bg-white/10 text-onSurfaceVariant border-white/10",
+};
+
 function formatRuntime(mins?: number) {
   if (mins == null) return "\u2014";
   return `${mins}m`;
@@ -163,7 +171,7 @@ export default function MovieTable({
               className="border-b border-white/10 last:border-b-0 hover:bg-surface-variant/30"
             >
               {hasSelection && (
-                <td className="px-4 py-3 align-top">
+                <td className="px-4 py-3 align-middle">
                   <button
                     onClick={() => onToggleSelect!(movie.id)}
                     className={`flex h-4 w-4 items-center justify-center rounded border ${
@@ -176,9 +184,9 @@ export default function MovieTable({
                   </button>
                 </td>
               )}
-              <td className="px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-surface-variant">
+              <td className="px-4 py-3 align-middle">
+                <div className="flex items-center gap-3">
+                  <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-surface-variant border border-white/10">
                     {movie.poster && (
                       <img
                         src={movie.poster}
@@ -188,73 +196,79 @@ export default function MovieTable({
                     )}
                   </div>
                   <div>
-                    <div className="font-semibold text-onSurface">
+                    <div className="font-body font-medium text-sm text-onSurface">
                       {movie.title}
                     </div>
                   </div>
                 </div>
               </td>
-              <td className="px-4 py-3 align-top">
+              <td className="px-4 py-3 align-middle">
                 <div className="flex flex-wrap gap-1">
                   {movie.genre ? (
                     movie.genre.split("/").map((g) => (
                       <span
                         key={g}
-                        className="rounded-md bg-surface-variant px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-onSurface"
+                        className="rounded bg-white/5 px-2 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-onSurfaceVariant border border-white/10"
                       >
                         {g.trim()}
                       </span>
                     ))
                   ) : (
-                    <span className="text-onSurfaceVariant">{"\u2014"}</span>
+                    <span className="text-onSurfaceVariant font-mono text-xs">—</span>
                   )}
                 </div>
               </td>
-              <td className="px-4 py-3 align-top">
+              <td className="px-4 py-3 align-middle">
                 {isMovieUpcoming(movie.releaseDate) ? (
-                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium border bg-cyan-500/15 border-cyan-500/30 text-cyan-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                     Coming Soon
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium border bg-green-500/15 border-green-500/30 text-green-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
                     Now Showing
                   </span>
                 )}
               </td>
-              <td className="px-4 py-3 align-top text-onSurface">
+              <td className="px-4 py-3 align-middle text-onSurface font-mono text-xs">
                 {formatRuntime(movie.durationMins)}
               </td>
-              <td className="px-4 py-3 align-top">
+              <td className="px-4 py-3 align-middle">
                 {movie.score != null ? (
                   <span
-                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
+                    className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-mono font-semibold border ${
                       movie.score >= 8
-                        ? "bg-emerald-500/10 text-emerald-400"
+                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
                         : movie.score >= 6
-                          ? "bg-amber-500/10 text-amber-400"
-                          : "bg-onSurfaceVariant/10 text-onSurfaceVariant"
+                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : "bg-white/10 text-onSurfaceVariant border-white/10"
                     }`}
                   >
                     {movie.score.toFixed(1)}
                   </span>
                 ) : (
-                  <span className="text-onSurfaceVariant">{"\u2014"}</span>
+                  <span className="text-onSurfaceVariant font-mono text-xs">—</span>
                 )}
               </td>
-              <td className="px-4 py-3 align-top">
+              <td className="px-4 py-3 align-middle">
                 {movie.badge ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-surface-variant px-2 py-1 text-xs font-medium text-onSurface">
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold border ${
+                      formatBadgeStyles[movie.badge] ?? "bg-white/10 text-onSurfaceVariant border-white/10"
+                    }`}
+                  >
                     {movie.badge}
                   </span>
                 ) : (
-                  <span className="text-onSurfaceVariant">{"\u2014"}</span>
+                  <span className="text-onSurfaceVariant font-mono text-xs">—</span>
                 )}
               </td>
-              <td className="px-4 py-3 align-top text-onSurface">
+              <td className="px-4 py-3 align-middle text-onSurface font-mono text-xs">
                 {formatDate(movie.releaseDate)}
               </td>
               {hasActions && (
-                <td className="px-4 py-3 align-top">
+                <td className="px-4 py-3 align-middle">
                   <ActionMenu
                     movie={movie}
                     onEdit={onEdit}

@@ -3,21 +3,21 @@ interface MovieStatusBadgeProps {
 }
 
 const badgeStyles: Record<string, string> = {
-  IMAX: "bg-blue-600/20 text-blue-400 ring-blue-600/30",
-  "4DX": "bg-purple-600/20 text-purple-400 ring-purple-600/30",
-  CineStar: "bg-amber-600/20 text-amber-400 ring-amber-600/30",
-  DOLBY: "bg-cyan-600/20 text-cyan-400 ring-cyan-600/30",
-  "2D": "bg-onSurfaceVariant/20 text-onSurfaceVariant ring-onSurfaceVariant/30",
+  IMAX: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  "4DX": "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  CineStar: "bg-red-500/15 text-red-300 border-red-500/30",
+  DOLBY: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+  "2D": "bg-white/10 text-onSurfaceVariant border-white/10",
 };
 
 export default function MovieStatusBadge({ badge }: MovieStatusBadgeProps) {
-  if (!badge) return <span className="text-onSurfaceVariant">{"\u2014"}</span>;
+  if (!badge) return <span className="text-onSurfaceVariant font-mono text-xs">—</span>;
 
-  const style = badgeStyles[badge] ?? "bg-surface-variant text-onSurface";
+  const style = badgeStyles[badge] ?? "bg-white/10 text-onSurfaceVariant border-white/10";
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${style}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold border ${style}`}
     >
       {badge}
     </span>

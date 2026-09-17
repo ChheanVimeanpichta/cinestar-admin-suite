@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Tv, Volume2, Users, LayoutGrid } from "lucide-react";
+import { X, Tv, Volume2, Users, LayoutGrid, AlertTriangle, ChevronDown } from "lucide-react";
 import { TheaterHall } from "../../types";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 
@@ -9,11 +9,46 @@ interface HallFormModalProps {
   onSave: (hall: Partial<TheaterHall>) => void;
   venueName: string;
   editHall?: TheaterHall | null;
+  existingHalls?: TheaterHall[];
   isSaving?: boolean;
 }
 
 const SCREEN_TYPES = ["IMAX", "4DX", "STANDARD", "DOLBY", "2D"] as const;
 const SOUND_SYSTEMS = ["Dolby Atmos", "THX Certified", "DTS:X", "7.1 Surround"] as const;
+export const CAPACITY_OPTIONS = [80, 100, 120, 150] as const;
+
+export const getHallKey = (rawName: string): string => {
+  const clean = rawName.trim().toLowerCase();
+  if (!clean) return "";
+
+  // Match prefix like "hall 2", "hall2", "screen 3", "vip 1", etc.
+  const prefixMatch = clean.match(/^([a-z\s]+?)\s*(\d+)/i);
+  if (prefixMatch) {
+    const word = prefixMatch[1].trim().replace(/\s+/g, " ");
+    const num = parseInt(prefixMatch[2], 10);
+    return `${word} ${num}`;
+  }
+
+  // Fallback for non-numbered names (e.g. "Grand Ballroom") -> alphanumeric only
+  return clean.replace(/[^a-z0-9]/g, "");
+};
+
+export const isHallDuplicate = (inputName: string, existingHallName: string): boolean => {
+  const inputClean = inputName.trim().toLowerCase();
+  const existClean = existingHallName.trim().toLowerCase();
+  if (!inputClean || !existClean) return false;
+
+  // 1. Direct exact or whitespace-collapsed match
+  if (inputClean.replace(/\s+/g, " ") === existClean.replace(/\s+/g, " ")) {
+    return true;
+  }
+
+  // 2. Base hall key match (e.g. "hall 2", "hall2", "hall 2 - 4dx")
+  const inputKey = getHallKey(inputName);
+  const existKey = getHallKey(existingHallName);
+
+  return !!(inputKey && existKey && inputKey === existKey);
+};
 
 export default function HallFormModal({
   open,
@@ -21,6 +56,7 @@ export default function HallFormModal({
   onSave,
   venueName,
   editHall,
+  existingHalls = [],
   isSaving = false,
 }: HallFormModalProps) {
   const { admin } = useAdminAuth();
@@ -32,6 +68,33 @@ export default function HallFormModal({
   const [status, setStatus] = useState<"Active" | "Maintenance">("Active");
 
   const isEditing = !!editHall;
+
+  const duplicateHall =
+    name.trim().length > 0
+      ? existingHalls.find(
+          (h) =>
+            (!editHall || h.id !== editHall.id) &&
+            isHallDuplicate(name, h.name)
+        )
+      : undefined;
+  const isDuplicateName = !!duplicateHall;
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Automatically format "hall1" -> "Hall 1", "hall 2" -> "Hall 2", etc.
+    const formatted = raw.replace(/\b(hall)\s*(\d+)/gi, (_match, _p1, p2) => {
+      return `Hall ${p2}`;
+    });
+    setName(formatted);
+  };
+
+  const handleNameBlur = () => {
+    setName((prev) => {
+      return prev
+        .trim()
+        .replace(/\b(hall)\s*(\d+)/gi, (_match, _p1, p2) => `Hall ${p2}`);
+    });
+  };
 
   useEffect(() => {
     if (editHall) {
@@ -53,14 +116,17 @@ export default function HallFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const cleanName = name
+      .trim()
+      .replace(/\b(hall)\s*(\d+)/gi, (_match, _p1, p2) => `Hall ${p2}`);
+    if (!cleanName || isDuplicateName) return;
 
     onSave({
       ...(editHall ? { id: editHall.id, venueId: editHall.venueId } : {}),
-      name: name.trim(),
+      name: cleanName,
       screenType,
       soundSystem,
-      capacity: Number(capacity) || 64,
+      capacity: Number(capacity) || 120,
       status,
     });
   };
@@ -98,23 +164,59 @@ export default function HallFormModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Hall Name */}
           <div>
-            <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5">
-              Hall Name *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant">
+                Hall Name *
+              </label>
+              {isDuplicateName && (
+                <span className="text-[11px] font-medium text-amber-400 flex items-center gap-1">
+                  <AlertTriangle size={12} /> Hall already exists
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Tv
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant"
+                className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
+                  isDuplicateName ? "text-amber-400" : "text-onSurfaceVariant"
+                }`}
               />
               <input
                 type="text"
                 required
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={handleNameChange}
+                onBlur={handleNameBlur}
                 placeholder="e.g. Hall 1 - IMAX"
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-surface border border-white/10 text-sm text-onSurface placeholder:text-onSurfaceVariant/50 outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50"
+                className={`w-full pl-9 pr-3 py-2.5 rounded-lg bg-surface border text-sm text-onSurface placeholder:text-onSurfaceVariant/50 outline-none transition-all ${
+                  isDuplicateName
+                    ? "border-amber-500/70 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                    : "border-white/10 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50"
+                }`}
               />
             </div>
+            {!isDuplicateName && (
+              <p className="text-[11px] text-onSurfaceVariant/60 mt-1.5 flex items-center gap-1">
+                <span>Tip: Typing <code className="bg-white/5 px-1 py-0.5 rounded text-onSurfaceVariant font-mono text-[10px]">hall1</code> automatically formats to <strong className="text-onSurface font-semibold">Hall 1</strong></span>
+              </p>
+            )}
+            {isDuplicateName && duplicateHall && (
+              <div className="mt-2 flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300 animate-fadeIn">
+                <AlertTriangle size={15} className="text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-300">
+                    Warning: Hall already exists in this venue
+                  </p>
+                  <p className="text-amber-300/80 mt-0.5 text-[11px] leading-relaxed">
+                    {duplicateHall.name.trim().toLowerCase() === name.trim().toLowerCase() ? (
+                      <>A hall named <strong className="text-amber-200">"{duplicateHall.name}"</strong> already exists in {venueName ? <strong className="text-white">{venueName}</strong> : "this venue"}.</>
+                    ) : (
+                      <>Conflicts with existing <strong className="text-amber-200">"{duplicateHall.name}"</strong> in {venueName ? <strong className="text-white">{venueName}</strong> : "this venue"}.</>
+                    )} Please choose a unique hall name or number.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Screen Type & Sound System */}
@@ -160,25 +262,59 @@ export default function HallFormModal({
             </div>
           </div>
 
-          {/* Seating Capacity */}
+          {/* Seating Capacity (Combo Box with fixed tiers: 80, 100, 120, 150) */}
           <div>
-            <label className="block text-xs font-mono uppercase text-onSurfaceVariant mb-1.5">
-              Seating Capacity (Seats) *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-mono uppercase text-onSurfaceVariant">
+                Seating Capacity (Seats) *
+              </label>
+              <span className="text-[11px] font-mono text-onSurfaceVariant">
+                Standard hall tiers
+              </span>
+            </div>
             <div className="relative">
               <Users
                 size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant pointer-events-none"
               />
-              <input
-                type="number"
-                min={20}
-                max={500}
-                required
+              <select
                 value={capacity}
                 onChange={(e) => setCapacity(Number(e.target.value))}
-                className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-surface border border-white/10 text-sm text-onSurface outline-none focus:border-red-500/50"
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg bg-surface border border-white/10 text-sm text-onSurface outline-none focus:border-red-500/50 cursor-pointer appearance-none"
+              >
+                {!CAPACITY_OPTIONS.includes(capacity as any) && capacity > 0 && (
+                  <option value={capacity} className="bg-[#1e1e1e] text-onSurface">
+                    {capacity} Seats (Current)
+                  </option>
+                )}
+                {CAPACITY_OPTIONS.map((c) => (
+                  <option key={c} value={c} className="bg-[#1e1e1e] text-onSurface">
+                    {c} Seats
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-onSurfaceVariant pointer-events-none"
               />
+            </div>
+
+            {/* Quick-Select Capacity Pills */}
+            <div className="grid grid-cols-4 gap-2 mt-2">
+              {CAPACITY_OPTIONS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCapacity(c)}
+                  className={`py-1.5 px-2 rounded-lg border text-xs font-mono font-medium transition-all ${
+                    capacity === c
+                      ? "bg-red-600/20 border-red-500/50 text-red-400 font-bold shadow-sm shadow-red-500/20"
+                      : "bg-surface border-white/10 text-onSurfaceVariant hover:bg-white/5 hover:text-onSurface"
+                  }`}
+                >
+                  {c} seats
+                </button>
+              ))}
             </div>
           </div>
 
@@ -225,13 +361,17 @@ export default function HallFormModal({
             </button>
             <button
               type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors shadow-lg shadow-red-600/25 disabled:opacity-50 flex items-center gap-2"
+              disabled={isSaving || isDuplicateName || !name.trim()}
+              className="px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors shadow-lg shadow-red-600/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSaving && (
                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               )}
-              {isEditing ? "Save Changes" : "Add Hall"}
+              {isDuplicateName
+                ? "Hall Already Exists"
+                : isEditing
+                ? "Save Changes"
+                : "Add Hall"}
             </button>
           </div>
         </form>
