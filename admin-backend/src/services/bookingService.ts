@@ -291,13 +291,29 @@ export const createBookingInDb = async (data: CreateBookingInput) => {
       data.id ||
       `#CS-${Math.floor(1000 + Math.random() * 9000)}-${String.fromCharCode(65 + Math.floor(Math.random() * 26))}`;
 
+    // Validate screeningId exists in database to prevent foreign key violation
+    let validScreeningId: string | null = null;
+    if (data.screeningId) {
+      try {
+        const found = await prisma.screening.findUnique({
+          where: { id: data.screeningId },
+          select: { id: true },
+        });
+        if (found) {
+          validScreeningId = found.id;
+        }
+      } catch {
+        validScreeningId = null;
+      }
+    }
+
     const created = await prisma.booking.create({
       data: {
         id: bookingId,
         userId: data.userId || 'guest-user',
         customerName: data.customerName || 'Guest Customer',
         movieTitle: data.movieTitle,
-        screeningId: data.screeningId || null,
+        screeningId: validScreeningId,
         screeningDate: data.screeningDate || new Date().toISOString().slice(0, 10),
         screeningTime: data.screeningTime || '20:00',
         seats: seatsStr,

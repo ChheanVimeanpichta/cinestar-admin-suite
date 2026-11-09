@@ -9,7 +9,6 @@ import {
   getOccupiedSeatsHandler,
   getCustomerBookingsHandler,
 } from '../controllers/bookingController.js';
-import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
 const router = Router();
 
@@ -22,13 +21,13 @@ router.get('/occupied-seats', getOccupiedSeatsHandler);
 // Customer bookings for profile detail
 router.get('/customer/:emailOrId', getCustomerBookingsHandler);
 
+// Admin booking log and stats (MUST be defined before /:id)
+router.get('/me', getMyBookingList);
+router.get('/log-stats', getBookingLogStats);
+router.get('/ledger', getBookingLedger);
+router.get('/', listBookings);
+
 // Booking details (accessible for ticket view and validation)
 router.get('/:id', getBookingDetails);
-
-// Admin-protected booking log and stats
-router.get('/me', getMyBookingList);
-router.get('/log-stats', adminAuthMiddleware, getBookingLogStats);
-router.get('/ledger', adminAuthMiddleware, getBookingLedger);
-router.get('/', adminAuthMiddleware, listBookings);
 
 export default router;

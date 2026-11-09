@@ -5,6 +5,7 @@ import {
   getWeeklySales as getWeeklySalesData,
   getTrendingMovies as getTrendingMoviesData,
   getLiveFeed as getLiveFeedData,
+  getSidebarStats as getSidebarStatsData,
 } from '../services/dashboardService.js';
 
 export const getStats = async (_req: Request, res: Response) => {
@@ -29,6 +30,11 @@ export const getLiveFeed = async (_req: Request, res: Response) => {
 
 export const getInventoryStats = async (_req: Request, res: Response) => {
   const stats = await getInventoryStatsData();
+  res.json(stats);
+};
+
+export const getSidebarStats = async (_req: Request, res: Response) => {
+  const stats = await getSidebarStatsData();
   res.json(stats);
 };
 

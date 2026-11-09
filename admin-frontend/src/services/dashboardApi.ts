@@ -4,6 +4,16 @@ import { TrendingMovie } from "../components/admin/TrendingMovies";
 import { FeedEntry } from "../components/admin/SystemLiveFeed";
 import { mockLiveFeed } from "../mocks/liveFeed";
 
+export interface SidebarStats {
+  movies: number;
+  showtimes: number;
+  bookings: number;
+  users: number;
+  theaters: number;
+  offers: number;
+  pendingBookings?: number;
+}
+
 export function fetchDashboardStats(): Promise<DashboardStats> {
   return apiGet<DashboardStats>("/dashboard/stats");
 }
@@ -22,6 +32,10 @@ export async function fetchLiveFeed(): Promise<FeedEntry[]> {
   } catch {
     return mockLiveFeed;
   }
+}
+
+export function fetchSidebarStats(): Promise<SidebarStats> {
+  return apiGet<SidebarStats>("/dashboard/sidebar-stats");
 }
 
 export function fetchInventoryStats(): Promise<{

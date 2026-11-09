@@ -30,6 +30,7 @@ import {
   createScreeningApi,
   syncScreeningsApi,
   deleteScreeningApi,
+  fetchAllScreenings,
 } from "../../services/showtimeApi";
 import { Movie, TheaterVenue } from "../../types";
 
@@ -80,7 +81,10 @@ function loadInitialShowtimes(): ShowtimeRowData[] {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const hasStaleAug = parsed.some((r) => r.timeLabel?.includes("Aug") || r.theaterName?.includes("Grand Mall"));
+        if (!hasStaleAug) return parsed;
+      }
     }
   } catch {}
   return allShowtimeRows;
@@ -139,6 +143,44 @@ export default function ShowtimeManager() {
       setFilterTheater("All Halls");
     }
   }, [searchParams]);
+
+  // Load live screenings from backend API on mount
+  useEffect(() => {
+    fetchAllScreenings()
+      .then((backendScreenings) => {
+        if (Array.isArray(backendScreenings) && backendScreenings.length > 0) {
+          const mappedRows: ShowtimeRowData[] = backendScreenings.map((s: any) => ({
+            id: s.id,
+            movieId: s.movieId,
+            posterUrl: s.posterUrl || s.movie?.poster || "",
+            title: s.title || s.movieTitle || "Unknown Movie",
+            durationMins: s.durationMins || 120,
+            genre: s.genre || "Action",
+            theaterName: s.theaterName || s.venueName || "CineStar Downtown",
+            venueId: s.venueId || "v-001",
+            venueName: s.venueName || s.theaterName || "CineStar Downtown",
+            hall: s.hall || "Hall 1",
+            hallId: s.theaterId,
+            time: s.time,
+            timeLabel: s.timeLabel || (s.date === new Date().toISOString().slice(0, 10) ? "Today" : s.date),
+            date: s.date,
+            format: s.format,
+            seatsFilled: s.seatsFilled ?? Math.floor(Math.random() * 50 + 20),
+            seatsTotal: s.seatsTotal ?? 120,
+            status: s.status || "ON SALE",
+          }));
+
+          setAllShowtimes((prev) => {
+            const apiIds = new Set(mappedRows.map((r) => r.id));
+            const retainedLocal = prev.filter((r) => !apiIds.has(r.id));
+            return [...mappedRows, ...retainedLocal];
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch all screenings on mount:", err);
+      });
+  }, []);
 
   // Persist showtimes to localStorage and sync to backend API
   useEffect(() => {
@@ -704,7 +746,7 @@ export default function ShowtimeManager() {
                       {allOnPageSelected && <Check className="h-3 w-3" />}
                     </button>
                   ) : (
-                    <span className="text-white/20 text-xs font-mono">•</span>
+                    <span className="text-white/20 text-xs font-mono">â€¢</span>
                   )}
                 </th>
                 <th className="py-3 font-medium">Movie</th>
@@ -740,7 +782,7 @@ export default function ShowtimeManager() {
           <div className="flex items-center justify-between px-6 py-4 border-t border-white/10">
             <p className="text-onSurfaceVariant text-xs font-mono">
               {totalCount > 0
-                ? `Showing ${(currentPage - 1) * pageSize + 1}–${Math.min(
+                ? `Showing ${(currentPage - 1) * pageSize + 1}â€“${Math.min(
                     currentPage * pageSize,
                     totalCount
                   )} of ${totalCount}`
@@ -752,7 +794,7 @@ export default function ShowtimeManager() {
                 disabled={currentPage === 1}
                 className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 transition"
               >
-                ‹
+                â€¹
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <button
@@ -772,7 +814,7 @@ export default function ShowtimeManager() {
                 disabled={currentPage === totalPages || totalPages === 0}
                 className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 transition"
               >
-                ›
+                â€º
               </button>
             </div>
           </div>
@@ -847,7 +889,7 @@ export default function ShowtimeManager() {
                           </p>
                           <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1 truncate">
                             <Film size={10} className="shrink-0" />
-                            <span className="truncate">{show.theaterName ? `${show.theaterName} • ${show.hall}` : show.hall}</span>
+                            <span className="truncate">{show.theaterName ? `${show.theaterName} â€¢ ${show.hall}` : show.hall}</span>
                           </p>
                         </CardWrapper>
                       );

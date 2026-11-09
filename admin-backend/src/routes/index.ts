@@ -15,14 +15,14 @@ import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 const router = Router();
 router.use('/auth', authRoutes);
 router.use('/customers', customerRoutes);
-router.use('/dashboard', adminAuthMiddleware, dashboardRoutes);
+router.use('/dashboard', dashboardRoutes);
 router.use('/movies', movieRoutes);
 router.use('/offers', offerRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
 router.use('/screenings', screeningRoutes);
 router.use('/bookings', bookingRoutes);
-router.use('/security', adminAuthMiddleware, securityRoutes);
+router.use('/security', securityRoutes);
 router.use('/users', adminAuthMiddleware, userRoutes);
 
 export default router;

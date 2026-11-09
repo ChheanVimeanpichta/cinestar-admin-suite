@@ -227,7 +227,9 @@ export default function ShowtimeFormModal({
   function computeTimeLabel(dateStr: string): string {
     if (!dateStr) return "";
     const today = new Date().toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     if (dateStr === today) return "Today";
+    if (dateStr === tomorrow) return "Tomorrow";
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -351,7 +353,7 @@ export default function ShowtimeFormModal({
                   <p className="font-mono text-[11px] text-onSurfaceVariant mt-1">
                     {selectedMovie.genre || "General"} &bull;{" "}
                     {selectedMovie.durationMins ? `${selectedMovie.durationMins} MIN` : "120 MIN"}
-                    {selectedMovie.score != null && ` • ⭐ ${selectedMovie.score}`}
+                    {selectedMovie.score != null && ` â€¢ â­ ${selectedMovie.score}`}
                   </p>
                   {selectedMovie.releaseDate && (
                     <p className="font-mono text-[10px] text-onSurfaceVariant/70 mt-0.5">
@@ -388,7 +390,7 @@ export default function ShowtimeFormModal({
             </select>
             {selectedVenue && (
               <p className="text-[11px] text-onSurfaceVariant/70 mt-1 pl-0.5 truncate">
-                📍 {selectedVenue.address || "Cinema branch"}
+                ðŸ“ {selectedVenue.address || "Cinema branch"}
               </p>
             )}
           </div>
@@ -417,7 +419,7 @@ export default function ShowtimeFormModal({
                 ) : (
                   halls.map((h) => (
                     <option key={h.id} value={h.name} className="bg-[#1a1a1a]">
-                      {h.name} ({h.capacity} seats • {h.screenType})
+                      {h.name} ({h.capacity} seats â€¢ {h.screenType})
                     </option>
                   ))
                 )}

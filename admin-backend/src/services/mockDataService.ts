@@ -87,7 +87,7 @@ const movies: Movie[] = [
     poster: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXVj1jwI4fGAbXd6dOf3emm0PzHhQj9-ZK6nv13pb5dQ&s=10',
     genre: 'Drama',
     score: 9.2,
-    synopsis: 'Dir. A.G. Iñárritu',
+    synopsis: 'Dir. A.G. IÃ±Ã¡rritu',
     badge: 'CineStar',
   },
   {
@@ -195,76 +195,167 @@ const theaters: Theater[] = [
   { id: 'th-hall-8', name: 'Hall 8', location: 'Floor 2 - Central' },
 ];
 
+const getRelativeDateStr = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+};
+
 const screenings: Screening[] = [
+  // Today's Showtimes
   {
     id: 'sc-001',
     movieId: 'avenger',
     theaterId: 'th-hall-3',
-    date: '2026-08-03',
+    date: getRelativeDateStr(0),
     time: '18:30',
     format: 'IMAX',
-    hall: 'Hall 3',
+    hall: 'Hall 3 - IMAX',
     price: 18,
   },
   {
     id: 'sc-002',
     movieId: 'avenger',
     theaterId: 'th-hall-4',
-    date: '2026-08-03',
+    date: getRelativeDateStr(0),
     time: '21:00',
     format: '4DX',
-    hall: 'Hall 4',
+    hall: 'Hall 4 - 4DX',
     price: 22,
   },
   {
     id: 'sc-003',
-    movieId: 'fairy-secret',
-    theaterId: 'th-hall-1',
-    date: '2026-08-03',
-    time: '19:15',
-    format: '2D',
-    hall: 'Hall 1',
-    price: 12,
+    movieId: 'spider-verse-2',
+    theaterId: 'th-hall-4',
+    date: getRelativeDateStr(0),
+    time: '15:30',
+    format: '4DX',
+    hall: 'Hall 4 - 4DX',
+    price: 20,
   },
   {
     id: 'sc-004',
-    movieId: 'jurrasic-echoes',
-    theaterId: 'th-hall-2',
-    date: '2026-08-04',
-    time: '16:45',
+    movieId: 'raya',
+    theaterId: 'th-hall-1',
+    date: getRelativeDateStr(0),
+    time: '14:00',
     format: 'STANDARD',
-    hall: 'Hall 2',
+    hall: 'Hall 1 - Standard',
     price: 12,
   },
   {
     id: 'sc-005',
-    movieId: 'princes',
-    theaterId: 'th-hall-3',
-    date: '2026-08-04',
-    time: '20:00',
+    movieId: 'avenger',
+    theaterId: 'th-hall-6',
+    date: getRelativeDateStr(0),
+    time: '19:45',
     format: 'DOLBY',
-    hall: 'Hall 3',
+    hall: 'Hall 6 - Dolby Atmos',
     price: 16,
   },
   {
     id: 'sc-006',
-    movieId: 'pirate-echoes',
-    theaterId: 'th-hall-1',
-    date: '2026-08-05',
-    time: '18:00',
-    format: '2D',
-    hall: 'Hall 1',
-    price: 12,
+    movieId: 'iron-verdict',
+    theaterId: 'th-hall-5',
+    date: getRelativeDateStr(0),
+    time: '17:30',
+    format: 'DOLBY',
+    hall: 'Hall 5 - VIP Lounge',
+    price: 16,
   },
   {
     id: 'sc-007',
     movieId: 'spider-verse-2',
-    theaterId: 'th-hall-2',
-    date: '2026-08-05',
-    time: '21:30',
+    theaterId: 'th-hall-7',
+    date: getRelativeDateStr(0),
+    time: '18:15',
     format: 'STANDARD',
-    hall: 'Hall 2',
+    hall: 'Hall 7 - ScreenX',
+    price: 14,
+  },
+  {
+    id: 'sc-008',
+    movieId: 'avenger',
+    theaterId: 'h-1788768009783',
+    date: getRelativeDateStr(0),
+    time: '18:00',
+    format: '2D',
+    hall: 'Hall 6 - 2D',
     price: 12,
+  },
+
+  // Tomorrow's Showtimes
+  {
+    id: 'sc-009',
+    movieId: 'avenger',
+    theaterId: 'th-hall-3',
+    date: getRelativeDateStr(1),
+    time: '15:00',
+    format: 'IMAX',
+    hall: 'Hall 3 - IMAX',
+    price: 18,
+  },
+  {
+    id: 'sc-010',
+    movieId: 'avenger',
+    theaterId: 'th-hall-3',
+    date: getRelativeDateStr(1),
+    time: '19:30',
+    format: 'IMAX',
+    hall: 'Hall 3 - IMAX',
+    price: 18,
+  },
+  {
+    id: 'sc-011',
+    movieId: 'spider-verse-2',
+    theaterId: 'th-hall-4',
+    date: getRelativeDateStr(1),
+    time: '17:00',
+    format: '4DX',
+    hall: 'Hall 4 - 4DX',
+    price: 20,
+  },
+  {
+    id: 'sc-012',
+    movieId: 'raya',
+    theaterId: 'th-hall-2',
+    date: getRelativeDateStr(1),
+    time: '14:30',
+    format: 'STANDARD',
+    hall: 'Hall 2 - Standard',
+    price: 12,
+  },
+  {
+    id: 'sc-013',
+    movieId: 'avenger',
+    theaterId: 'th-hall-6',
+    date: getRelativeDateStr(1),
+    time: '20:00',
+    format: 'DOLBY',
+    hall: 'Hall 6 - Dolby Atmos',
+    price: 16,
+  },
+
+  // Day After Tomorrow
+  {
+    id: 'sc-014',
+    movieId: 'avenger',
+    theaterId: 'th-hall-3',
+    date: getRelativeDateStr(2),
+    time: '18:30',
+    format: 'IMAX',
+    hall: 'Hall 3 - IMAX',
+    price: 18,
+  },
+  {
+    id: 'sc-015',
+    movieId: 'spider-verse-2',
+    theaterId: 'th-hall-7',
+    date: getRelativeDateStr(2),
+    time: '19:00',
+    format: 'STANDARD',
+    hall: 'Hall 7 - ScreenX',
+    price: 14,
   },
 ];
 
@@ -611,7 +702,110 @@ export const getVenueStats = async () => {
   return { totalVenues, activeHalls, totalCapacity, systemHealth };
 };
 
-export const getScreenings = async (): Promise<Screening[]> => screenings;
+export const getScreenings = async (): Promise<any[]> => {
+  const defaultHallToVenue: Record<string, { venueId: string; venueName: string; hallName: string }> = {
+    'th-hall-1': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 1 - Standard' },
+    'th-hall-2': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 2 - Standard' },
+    'th-hall-3': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 3 - IMAX' },
+    'th-hall-4': { venueId: 'v-001', venueName: 'CineStar Downtown', hallName: 'Hall 4 - 4DX' },
+    'th-hall-5': { venueId: 'v-002', venueName: 'CineStar Riverside', hallName: 'Hall 5 - VIP Lounge' },
+    'th-hall-6': { venueId: 'v-002', venueName: 'CineStar Riverside', hallName: 'Hall 6 - Dolby Atmos' },
+    'th-hall-7': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 7 - ScreenX' },
+    'th-hall-8': { venueId: 'v-003', venueName: 'CineStar Westgate', hallName: 'Hall 8 - Laser 2D' },
+    'h-1788768009783': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 6 - 2D' },
+    'h-1788866998828': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 1 - 2D' },
+    'h-1788867016383': { venueId: 'v-1788767915971', venueName: 'Cinestar Olypia Mall', hallName: 'Hall 1 - Standard' },
+  };
+
+  const results: any[] = [];
+  const seenKeys = new Set<string>();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const tomorrowIso = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  function computeLabel(dateStr?: string): string {
+    if (!dateStr || dateStr === 'Today' || dateStr === todayIso) return 'Today';
+    if (dateStr === 'Tomorrow' || dateStr === tomorrowIso) return 'Tomorrow';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  try {
+    const dbScreenings = await prisma.screening.findMany({
+      include: {
+        theater: {
+          include: { venue: true },
+        },
+        movie: true,
+      },
+      orderBy: { id: 'desc' },
+    });
+
+    for (const s of dbScreenings) {
+      const mapped = defaultHallToVenue[s.theaterId] || {};
+      const vName = s.theater?.venue?.name || mapped.venueName || 'CineStar Downtown';
+      const vId = s.theater?.venueId || s.theater?.venue?.id || mapped.venueId || 'v-001';
+      const hallName = s.hall || s.theater?.name || mapped.hallName || 'Hall 1';
+      const key = `${s.date}_${s.time}_${vName}_${s.format}`;
+      seenKeys.add(key);
+      seenKeys.add(s.id);
+      results.push({
+        id: s.id,
+        movieId: s.movieId,
+        movieTitle: s.movie?.title,
+        title: s.movie?.title || 'Unknown Movie',
+        posterUrl: s.movie?.poster,
+        durationMins: s.movie?.durationMins || 120,
+        genre: s.movie?.genre || 'Action',
+        theaterId: s.theaterId,
+        venueId: vId,
+        venueName: vName,
+        theaterName: vName,
+        date: s.date,
+        time: s.time,
+        timeLabel: computeLabel(s.date),
+        format: s.format,
+        hall: hallName,
+        price: s.price,
+      });
+    }
+  } catch (err) {
+    console.warn('[mockDataService] Failed to query all Prisma screenings:', err);
+  }
+
+  // Also include in-memory screenings
+  for (const s of screenings) {
+    const mapped = defaultHallToVenue[s.theaterId] || {
+      venueId: (s as any).venueId || 'v-001',
+      venueName: (s as any).venueName || (s as any).theaterName || 'CineStar Downtown',
+      hallName: s.hall || 'Hall 1',
+    };
+    const vName = (s as any).venueName || (s as any).theaterName || mapped.venueName;
+    const vId = (s as any).venueId || mapped.venueId;
+    const hallName = s.hall || mapped.hallName;
+    const key = `${s.date}_${s.time}_${vName}_${s.format}`;
+
+    if (!seenKeys.has(s.id) && !seenKeys.has(key)) {
+      seenKeys.add(s.id);
+      seenKeys.add(key);
+      const foundMovie = movies.find((m) => m.id === s.movieId);
+      results.push({
+        ...s,
+        venueId: vId,
+        venueName: vName,
+        theaterName: vName,
+        hall: hallName,
+        title: (s as any).title || foundMovie?.title || 'Avengers: Endgame',
+        posterUrl: (s as any).posterUrl || foundMovie?.poster,
+        timeLabel: computeLabel(s.date),
+      });
+    }
+  }
+
+  return results;
+};
 
 export interface ShowtimeRowData {
   id: string;
@@ -704,14 +898,36 @@ export const getShowtimeStats = async () => {
 export const createScreeningService = async (data: any): Promise<any> => {
   const id = data.id || `sc-${Date.now()}`;
   let movieId = (data.movieId || '').trim();
-  if (!movieId && data.title) {
-    const foundMovie = movies.find((m) => m.title.toLowerCase() === data.title.toLowerCase());
-    movieId = foundMovie?.id || 'avenger';
+  let title = (data.title || '').trim();
+
+  if (movieId) {
+    const memMovie = movies.find((m) => m.id === movieId);
+    if (memMovie && !title) title = memMovie.title;
   }
+  if (!movieId && title) {
+    const memMovie = movies.find((m) => m.title.toLowerCase() === title.toLowerCase());
+    if (memMovie) movieId = memMovie.id;
+  }
+
+  // Also query Prisma Movie
+  if (!movieId || !title) {
+    try {
+      if (movieId && !title) {
+        const dbM = await prisma.movie.findUnique({ where: { id: movieId } });
+        if (dbM) title = dbM.title;
+      } else if (!movieId && title) {
+        const dbM = await prisma.movie.findFirst({ where: { title: { equals: title } } });
+        if (dbM) movieId = dbM.id;
+      }
+    } catch {}
+  }
+
   if (!movieId) movieId = 'avenger';
+  if (!title) title = movies.find((m) => m.id === movieId)?.title || 'Avengers: Endgame';
 
   const time = data.time || '18:00';
-  const date = data.date || data.timeLabel || 'Today';
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const date = data.date || (data.timeLabel === 'Today' ? todayIso : data.timeLabel) || todayIso;
   const format = (data.format || 'STANDARD').toUpperCase();
   const hall = data.hall || 'Hall 1';
   const price = typeof data.price === 'number' ? data.price : (data.price ? Number(data.price) : 14);
@@ -755,7 +971,8 @@ export const createScreeningService = async (data: any): Promise<any> => {
     format,
     hall,
     price,
-    title: data.title || movies.find((m) => m.id === movieId)?.title || 'Avengers: Endgame',
+    title,
+    posterUrl: data.posterUrl || movies.find((m) => m.id === movieId)?.poster,
   };
 
   // Try Prisma creation
@@ -766,8 +983,8 @@ export const createScreeningService = async (data: any): Promise<any> => {
     const targetTheaterId = existingTheater ? existingTheater.id : 'th-hall-1';
 
     let existingMovie = await prisma.movie.findUnique({ where: { id: movieId } });
-    if (!existingMovie && data.title) {
-      existingMovie = await prisma.movie.findFirst({ where: { title: data.title } });
+    if (!existingMovie && title) {
+      existingMovie = await prisma.movie.findFirst({ where: { title } });
     }
 
     if (existingMovie) {
@@ -980,6 +1197,10 @@ export interface BookingLedgerEntry {
   screeningDate: string;
   screeningTime: string;
   seats: string[];
+  totalPrice?: number;
+  paymentMethod?: string;
+  status?: string;
+  createdAt?: string;
 }
 
 export interface SecurityStreamEvent {
@@ -1002,36 +1223,48 @@ const bookingLedger: BookingLedgerEntry[] = [
     customerName: "Sophia Laurent",
     customerInitials: "SL",
     movieTitle: "Avengers: Endgame",
-    screeningDate: "Oct 24, 2023",
+    screeningDate: "Today",
     screeningTime: "21:00",
     seats: ["H-12", "H-13"],
+    totalPrice: 28.0,
+    paymentMethod: "ABA Pay",
+    status: "confirmed",
   },
   {
     id: "#CS-9920-R",
     customerName: "Marcus Chen",
     customerInitials: "MC",
     movieTitle: "The Fairy Secret",
-    screeningDate: "Oct 24, 2023",
+    screeningDate: "Today",
     screeningTime: "19:15",
     seats: ["D-05"],
+    totalPrice: 14.0,
+    paymentMethod: "ACLEDA",
+    status: "confirmed",
   },
   {
     id: "#CS-9919-Q",
     customerName: "Elena Rodriguez",
     customerInitials: "ER",
     movieTitle: "Jurrasic Echoes",
-    screeningDate: "Oct 23, 2023",
+    screeningDate: "Yesterday",
     screeningTime: "16:45",
     seats: ["F-08", "F-09"],
+    totalPrice: 28.0,
+    paymentMethod: "Wing",
+    status: "confirmed",
   },
   {
     id: "#CS-9918-P",
     customerName: "James O'Brien",
     customerInitials: "JO",
     movieTitle: "SPIDER-MAN: INTO THE SPIDER-VERSE 2",
-    screeningDate: "Oct 23, 2023",
+    screeningDate: "Yesterday",
     screeningTime: "18:30",
     seats: ["A-01", "A-02", "A-03"],
+    totalPrice: 42.0,
+    paymentMethod: "Card",
+    status: "confirmed",
   },
 ];
 

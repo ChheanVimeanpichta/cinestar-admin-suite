@@ -19,18 +19,22 @@ export default function TrendingMovies({ movies, aiInsight }: TrendingMoviesProp
     <div className="bg-surface-variant rounded p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <p className="font-heading font-semibold text-onSurface">Trending Movies</p>
-        <button className="text-accent text-xs font-mono uppercase hover:underline">
-          View All
-        </button>
+        <span className="text-accent text-[11px] font-mono uppercase tracking-wider">
+          Top Performers
+        </span>
       </div>
 
       <div className="flex flex-col gap-4 flex-1">
         {movies.map((m) => (
           <div key={m.id} className="flex items-center gap-3">
             <img
-              src={m.poster}
+              src={m.poster || "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300"}
               alt={m.title}
-              className="w-10 h-14 object-cover rounded"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300";
+              }}
+              className="w-10 h-14 object-cover rounded bg-white/5 shrink-0"
             />
             <div className="flex-1 min-w-0">
               <p className="text-onSurface text-sm font-body font-medium truncate">
@@ -46,7 +50,7 @@ export default function TrendingMovies({ movies, aiInsight }: TrendingMoviesProp
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-onSurface text-sm font-body">{m.revenue}</p>
+              <p className="text-onSurface text-sm font-body font-semibold">{m.revenue}</p>
               <p className={`text-xs ${m.positive ? "text-green-400" : "text-accent"}`}>
                 {m.changePct}
               </p>

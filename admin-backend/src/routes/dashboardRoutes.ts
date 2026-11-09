@@ -3,6 +3,7 @@ import {
   getDashboardSummary,
   getInventoryStats,
   getLiveFeed,
+  getSidebarStats,
   getStats,
   getTrendingMovies,
   getWeeklySales,
@@ -15,5 +16,6 @@ router.get('/trending-movies', getTrendingMovies);
 router.get('/live-feed', getLiveFeed);
 router.get('/summary', getDashboardSummary);
 router.get('/inventory-stats', getInventoryStats);
+router.get('/sidebar-stats', getSidebarStats);
 
 export default router;
