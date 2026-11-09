@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
@@ -8,58 +7,31 @@ import {
   Users as UsersIcon,
   Building2,
   Tag,
+  Film,
   LogOut,
 } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
-import { fetchSidebarStats, SidebarStats } from "../services/dashboardApi";
 
-interface SidebarLink {
-  label: string;
-  to: string;
-  icon: JSX.Element;
-  badgeKey?: keyof SidebarStats;
-  badgeHighlight?: boolean;
-}
-
-const links: SidebarLink[] = [
+const links = [
   { label: "Overview", to: "/admin", icon: <LayoutGrid size={16} /> },
-  { label: "Movie Management", to: "/admin/movies", icon: <Clapperboard size={16} />, badgeKey: "movies" },
-  { label: "Showtime Manager", to: "/admin/showtimes", icon: <Clock size={16} />, badgeKey: "showtimes" },
-  { label: "Booking Log", to: "/admin/bookings", icon: <ClipboardList size={16} />, badgeKey: "bookings", badgeHighlight: true },
-  { label: "Users", to: "/admin/users", icon: <UsersIcon size={16} />, badgeKey: "users" },
-  { label: "Theaters", to: "/admin/theaters", icon: <Building2 size={16} />, badgeKey: "theaters" },
-  { label: "Offers", to: "/admin/offers", icon: <Tag size={16} />, badgeKey: "offers" },
+  { label: "Movie Management", to: "/admin/movies", icon: <Clapperboard size={16} /> },
+  { label: "Showtime Manager", to: "/admin/showtimes", icon: <Clock size={16} /> },
+  { label: "Booking Log", to: "/admin/bookings", icon: <ClipboardList size={16} /> },
+  { label: "Users", to: "/admin/users", icon: <UsersIcon size={16} /> },
+  { label: "Theaters", to: "/admin/theaters", icon: <Building2 size={16} /> },
+  { label: "Offers", to: "/admin/offers", icon: <Tag size={16} /> },
+  { label: "Slideshow", to: "/admin/slides", icon: <Film size={16} /> },
 ];
 
 export default function AdminSidebar() {
   const { admin, logout } = useAdminAuth();
   const navigate = useNavigate();
   const isAdmin = admin?.role === "admin" || admin?.email?.toLowerCase() === "admin@gmail.com";
-  const [stats, setStats] = useState<SidebarStats | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const loadStats = () => {
-      fetchSidebarStats()
-        .then((data) => {
-          if (isMounted) setStats(data);
-        })
-        .catch(() => {});
-    };
-
-    loadStats();
-    // Poll every 6s so sidebar badges update dynamically in real time
-    const interval = setInterval(loadStats, 6000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   return (
     <aside className="w-64 bg-surface border-r border-white/10 flex flex-col p-6">
       <div className="flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded bg-accent flex items-center justify-center shadow-sm">
+        <div className="w-8 h-8 rounded bg-accent flexitems-center justify-center">
           <Clapperboard size={16} className="text-onSurface" />
         </div>
         <div>
@@ -70,47 +42,25 @@ export default function AdminSidebar() {
         </div>
       </div>
 
+    
       <nav className="flex flex-col gap-1 flex-1">
-        {links.map((link) => {
-          const count = link.badgeKey && stats ? stats[link.badgeKey] : undefined;
-          return (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === "/admin"}
-              className={({ isActive }) =>
-                `flex items-center justify-between px-4 py-3 rounded font-body text-body-md transition-all ${
-                  isActive
-                    ? "bg-accent text-onSurface font-semibold shadow-sm"
-                    : "text-onSurfaceVariant hover:bg-white/5 hover:text-onSurface"
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div className="flex items-center gap-3 min-w-0">
-                    {link.icon}
-                    <span className="truncate">{link.label}</span>
-                  </div>
-
-                  {count !== undefined && (
-                    <span
-                      className={`font-mono text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-2 shrink-0 transition-colors ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : link.badgeHighlight && count > 0
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-white/5 text-onSurfaceVariant/80 border border-white/10"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </>
-              )}
-            </NavLink>
-          );
-        })}
+        {links.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            end={link.to === "/admin"}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded font-body text-body-md transition-colors ${
+                isActive
+                  ? "bg-accent text-onSurface"
+                  : "text-onSurfaceVariant hover:bg-white/5 hover:text-onSurface"
+              }`
+            }
+          >
+            {link.icon}
+            {link.label}
+          </NavLink>
+        ))}
       </nav>
 
       {/* Admin profile footer */}

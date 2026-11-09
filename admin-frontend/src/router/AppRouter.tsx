@@ -12,6 +12,7 @@ import BookingLog from "../pages/admin/BookingLog";
 import Users from "../pages/admin/Users";
 import Theaters from "../pages/admin/Theaters";
 import Offers from "../pages/admin/Offers";
+import Slides from "../pages/admin/Slides";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -78,6 +79,10 @@ const router = createBrowserRouter([
     element: <Navigate to="/admin/offers" replace />,
   },
   {
+    path: "/slides",
+    element: <Navigate to="/admin/slides" replace />,
+  },
+  {
     path: "/admin",
     element: (
       <ProtectedRoute>
@@ -92,6 +97,7 @@ const router = createBrowserRouter([
       { path: "users", element: <Users /> },
       { path: "theaters", element: <Theaters /> },
       { path: "offers", element: <Offers /> },
+      { path: "slides", element: <Slides /> },
     ],
   },
   {

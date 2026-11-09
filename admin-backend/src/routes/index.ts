@@ -10,6 +10,7 @@ import theaterRoutes from './theaterRoutes.js';
 import userRoutes from './userRoutes.js';
 import customerRoutes from './customerRoutes.js';
 import offerRoutes from './offerRoutes.js';
+import slideRoutes from './slideRoutes.js';
 import { adminAuthMiddleware } from '../middleware/adminAuthMiddleware.js';
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use('/customers', customerRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/movies', movieRoutes);
 router.use('/offers', offerRoutes);
+router.use('/slides', slideRoutes);
 router.use('/theaters', theaterRoutes);
 router.use('/showtimes', adminAuthMiddleware, showtimeRoutes);
 router.use('/screenings', screeningRoutes);

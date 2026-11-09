@@ -242,33 +242,38 @@ export const verifyCustomerCredentials = async (
   emailOrUsername: string,
   password?: string
 ): Promise<CustomerAccount | null> => {
-  const q = emailOrUsername.toLowerCase();
-  const dbCustomer = await prisma.customer.findFirst({
-    where: {
-      OR: [
-        { email: q },
-        { name: q },
-      ],
-    },
-  });
+  try {
+    const q = emailOrUsername.toLowerCase();
+    const dbCustomer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email: q },
+          { name: q },
+        ],
+      },
+    });
 
-  if (!dbCustomer) return null;
+    if (!dbCustomer) return null;
 
-  if (password && dbCustomer.password && dbCustomer.password !== password) {
+    if (password && dbCustomer.password && dbCustomer.password !== password) {
+      return null;
+    }
+
+    return {
+      id: dbCustomer.id,
+      name: dbCustomer.name,
+      email: dbCustomer.email.toLowerCase(),
+      phone: dbCustomer.phone || '',
+      password: dbCustomer.password || '',
+      avatarUrl: (dbCustomer as any).avatarUrl || '',
+      role: 'Customer',
+      status: (dbCustomer.status === 'Suspended' ? 'Suspended' : 'Active') as 'Active' | 'Suspended',
+      joinDate: dbCustomer.joinDate || new Date(dbCustomer.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+      bookingCount: dbCustomer.bookingCount || 0,
+      createdAt: dbCustomer.createdAt.toISOString(),
+    };
+  } catch (err: any) {
+    console.warn('[customerService] Database offline during customer credential verification:', err?.message || err);
     return null;
   }
-
-  return {
-    id: dbCustomer.id,
-    name: dbCustomer.name,
-    email: dbCustomer.email.toLowerCase(),
-    phone: dbCustomer.phone || '',
-    password: dbCustomer.password || '',
-    avatarUrl: (dbCustomer as any).avatarUrl || '',
-    role: 'Customer',
-    status: (dbCustomer.status === 'Suspended' ? 'Suspended' : 'Active') as 'Active' | 'Suspended',
-    joinDate: dbCustomer.joinDate || new Date(dbCustomer.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-    bookingCount: dbCustomer.bookingCount || 0,
-    createdAt: dbCustomer.createdAt.toISOString(),
-  };
 };

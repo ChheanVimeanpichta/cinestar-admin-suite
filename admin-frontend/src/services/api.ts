@@ -228,4 +228,41 @@ export function updateOffer(id: string, payload: Partial<AdminOffer>): Promise<A
 
 export function deleteOffer(id: string): Promise<{ success: boolean; message: string }> {
   return apiDelete<{ success: boolean; message: string }>(`/offers/${id}`);
-}
+}
+
+// Slideshow Management Endpoints
+export interface AdminSlide {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  image: string;
+  badges: string[];
+  linkUrl?: string;
+  status: 'Active' | 'Inactive';
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function fetchAllSlides(includeAll = true): Promise<AdminSlide[]> {
+  const sep = includeAll ? '?includeAll=true&' : '?';
+  return apiGet<AdminSlide[]>(`/slides${sep}_t=${Date.now()}`);
+}
+
+export function fetchSlideById(id: string): Promise<AdminSlide> {
+  return apiGet<AdminSlide>(`/slides/${id}?_t=${Date.now()}`);
+}
+
+export function createSlide(payload: Partial<AdminSlide>): Promise<AdminSlide> {
+  return apiPost<AdminSlide>('/slides', payload);
+}
+
+export function updateSlide(id: string, payload: Partial<AdminSlide>): Promise<AdminSlide> {
+  return apiPut<AdminSlide>(`/slides/${id}`, payload);
+}
+
+export function deleteSlide(id: string): Promise<{ success: boolean; message: string }> {
+  return apiDelete<{ success: boolean; message: string }>(`/slides/${id}`);
+}
+
