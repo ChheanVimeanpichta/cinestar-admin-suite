@@ -13,8 +13,13 @@ import { verifyAdminCredentials, findAdminByEmail } from '../services/authServic
 import { recordSecurityEvent } from '../services/securityService.js';
 
 export const listCustomers = async (_req: Request, res: Response) => {
-  const customers = await getAllCustomers();
-  res.json(customers);
+  try {
+    const customers = await getAllCustomers();
+    res.json(customers);
+  } catch (err: any) {
+    console.error('Failed to list customers:', err?.message || err);
+    res.json([]);
+  }
 };
 
 export const loginCustomer = async (req: Request, res: Response) => {
@@ -123,50 +128,65 @@ export const registerCustomer = async (req: Request, res: Response) => {
 };
 
 export const getCustomer = async (req: Request, res: Response) => {
-  const customer = await findCustomerById(String(req.params.id));
-  if (!customer) {
-    res.status(404).json({ message: 'Customer not found' });
-    return;
+  try {
+    const customer = await findCustomerById(String(req.params.id));
+    if (!customer) {
+      res.status(404).json({ message: 'Customer not found' });
+      return;
+    }
+    res.json(customer);
+  } catch (err: any) {
+    console.error('Failed to get customer by id:', err?.message || err);
+    res.status(500).json({ message: 'Error retrieving customer' });
   }
-  res.json(customer);
 };
 
 export const getCustomerStatus = async (req: Request, res: Response) => {
-  const email = String(req.params.email ?? req.query.email ?? '').toLowerCase();
-  if (!email) {
-    res.status(400).json({ message: 'Email is required' });
-    return;
-  }
-  const customer = await findCustomerByEmail(email);
-  if (!customer) {
-    const admin = await findAdminByEmail(email);
-    if (admin) {
-      res.json({
-        exists: true,
-        status: 'Active',
-        isSuspended: false,
-        role: admin.role === 'admin' ? 'Admin' : 'Staff',
-      });
+  try {
+    const email = String(req.params.email ?? req.query.email ?? '').toLowerCase();
+    if (!email) {
+      res.status(400).json({ message: 'Email is required' });
       return;
     }
-    res.json({ exists: false, status: 'NotFound', isSuspended: false, role: 'Customer' });
-    return;
+    const customer = await findCustomerByEmail(email);
+    if (!customer) {
+      const admin = await findAdminByEmail(email);
+      if (admin) {
+        res.json({
+          exists: true,
+          status: 'Active',
+          isSuspended: false,
+          role: admin.role === 'admin' ? 'Admin' : 'Staff',
+        });
+        return;
+      }
+      res.json({ exists: false, status: 'NotFound', isSuspended: false, role: 'Customer' });
+      return;
+    }
+    res.json({
+      exists: true,
+      status: customer.status,
+      isSuspended: customer.status === 'Suspended',
+      role: customer.role || 'Customer',
+    });
+  } catch (err: any) {
+    console.error('Failed to get customer status:', err?.message || err);
+    res.json({ exists: false, status: 'Active', isSuspended: false, role: 'Customer' });
   }
-  res.json({
-    exists: true,
-    status: customer.status,
-    isSuspended: customer.status === 'Suspended',
-    role: customer.role || 'Customer',
-  });
 };
 
 export const updateCustomerById = async (req: Request, res: Response) => {
-  const updated = await updateCustomer(String(req.params.id), req.body ?? {});
-  if (!updated) {
-    res.status(404).json({ message: 'Customer not found' });
-    return;
+  try {
+    const updated = await updateCustomer(String(req.params.id), req.body ?? {});
+    if (!updated) {
+      res.status(404).json({ message: 'Customer not found' });
+      return;
+    }
+    res.json(updated);
+  } catch (err: any) {
+    console.error('Failed to update customer:', err?.message || err);
+    res.status(500).json({ message: 'Failed to update customer' });
   }
-  res.json(updated);
 };
 
 export const deleteCustomerById = async (req: Request, res: Response) => {

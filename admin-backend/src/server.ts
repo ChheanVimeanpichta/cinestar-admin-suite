@@ -30,5 +30,14 @@ function startServer(port: number) {
   });
 }
 
+// Process-level resilience against unhandled promise rejections (e.g. DB connection pool timeouts)
+process.on('unhandledRejection', (reason: any) => {
+  console.warn('⚠ Unhandled Rejection intercepted (server staying alive):', reason?.message || reason);
+});
+
+process.on('uncaughtException', (err: any) => {
+  console.error('⚠ Uncaught Exception intercepted (server staying alive):', err?.message || err);
+});
+
 startServer(initialPort);
 

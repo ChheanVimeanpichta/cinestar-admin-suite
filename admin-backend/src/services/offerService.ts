@@ -179,9 +179,62 @@ const mapDbOffer = (o: any): OfferItem => {
   };
 };
 
+const inMemoryOffers: Map<string, OfferItem> = new Map(
+  DEFAULT_OFFERS.map((o) => [o.id.toLowerCase(), o])
+);
+
+const withTimeout = <T>(promise: Promise<T>, ms = 4000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('DATABASE_TIMEOUT')), ms)
+    ),
+  ]);
+};
+
+let hasInitialDbSync = false;
+let lastSyncTime = 0;
+
+const sortByCreatedAtDesc = (a: OfferItem, b: OfferItem) => {
+  const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+  return timeB - timeA;
+};
+
+// Asynchronously pre-populate inMemoryOffers from Prisma
+const syncOffersFromDb = async (): Promise<void> => {
+  try {
+    const dbOffers = await withTimeout(
+      prisma.offer.findMany({
+        orderBy: { createdAt: 'desc' },
+      }),
+      4000
+    );
+    if (dbOffers && dbOffers.length > 0) {
+      // Retain memory additions and sync all DB offers
+      for (const o of dbOffers) {
+        const mapped = mapDbOffer(o);
+        inMemoryOffers.set(mapped.id.toLowerCase(), mapped);
+      }
+      hasInitialDbSync = true;
+      lastSyncTime = Date.now();
+    }
+  } catch {
+    // Database busy or offline - memory fallbacks in place
+  }
+};
+
+// Kick off initial sync
+syncOffersFromDb();
+
+// Periodic sync every 15s in background
+setInterval(() => {
+  syncOffersFromDb().catch(() => {});
+}, 15000);
+
 export const seedDefaultOffersIfEmpty = async (): Promise<void> => {
   try {
-    const count = await prisma.offer.count();
+    const count = await withTimeout(prisma.offer.count(), 2000);
     if (count === 0) {
       for (const def of DEFAULT_OFFERS) {
         await prisma.offer.create({
@@ -201,47 +254,58 @@ export const seedDefaultOffersIfEmpty = async (): Promise<void> => {
           },
         });
       }
-      console.log('✓ Successfully seeded default cinema offers into AWS RDS MySQL.');
     }
-  } catch (err) {
-    console.warn('[offerService] Seed check skipped or database busy:', err);
+  } catch {
+    // Seed check skipped when database busy or offline
   }
 };
 
 export const getAllOffers = async (includeInactive = false): Promise<OfferItem[]> => {
-  try {
-    await seedDefaultOffersIfEmpty();
-    const where = includeInactive ? {} : { status: 'Active' };
-    const dbOffers = await prisma.offer.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (dbOffers.length > 0) {
-      return dbOffers.map(mapDbOffer);
-    }
-  } catch (err: any) {
-    console.warn('[offerService] Database query notice, using default fallback offers:', err?.message || err);
+  // If not yet synced on cold boot, wait once for DB sync
+  if (!hasInitialDbSync) {
+    await syncOffersFromDb();
+  } else if (Date.now() - lastSyncTime > 10000) {
+    // Background non-blocking sync if older than 10s
+    syncOffersFromDb().catch(() => {});
   }
 
-  return DEFAULT_OFFERS;
+  const all = Array.from(inMemoryOffers.values());
+  const filtered = includeInactive ? all : all.filter((o) => o.status !== 'Inactive');
+  return filtered.sort(sortByCreatedAtDesc);
 };
 
 export const getOfferById = async (id: string): Promise<OfferItem | null> => {
-  try {
-    const o = await prisma.offer.findUnique({
-      where: { id },
-    });
-    if (o) {
-      return mapDbOffer(o);
-    }
-  } catch (err) {
-    console.warn(`[offerService] Find offer ${id} error:`, err);
+  const normalizedId = String(id).trim().toLowerCase();
+
+  // 1. Fast check from memory cache
+  const mem = inMemoryOffers.get(normalizedId);
+  if (mem) {
+    return mem;
   }
 
-  // Fallback check
-  const def = DEFAULT_OFFERS.find((item) => item.id === id);
-  return def || null;
+  // 2. Query Prisma database with timeout
+  try {
+    const o = await withTimeout(
+      prisma.offer.findFirst({
+        where: {
+          OR: [
+            { id: id },
+            { id: normalizedId },
+          ],
+        },
+      }),
+      4000
+    );
+    if (o) {
+      const mapped = mapDbOffer(o);
+      inMemoryOffers.set(mapped.id.toLowerCase(), mapped);
+      return mapped;
+    }
+  } catch {
+    // Database busy or offline
+  }
+
+  return DEFAULT_OFFERS.find((item) => item.id.toLowerCase() === normalizedId) || null;
 };
 
 export const createOffer = async (payload: {
@@ -288,7 +352,9 @@ export const createOffer = async (payload: {
     },
   });
 
-  return mapDbOffer(created);
+  const mapped = mapDbOffer(created);
+  inMemoryOffers.set(mapped.id.toLowerCase(), mapped);
+  return mapped;
 };
 
 export const updateOffer = async (
@@ -337,12 +403,17 @@ export const updateOffer = async (
     },
   });
 
-  return mapDbOffer(updated);
+  const mapped = mapDbOffer(updated);
+  inMemoryOffers.set(mapped.id.toLowerCase(), mapped);
+  return mapped;
 };
 
 export const deleteOffer = async (id: string): Promise<boolean> => {
-  await prisma.offer.delete({
-    where: { id },
-  });
+  try {
+    await prisma.offer.delete({
+      where: { id },
+    });
+  } catch {}
+  inMemoryOffers.delete(id.toLowerCase());
   return true;
 };

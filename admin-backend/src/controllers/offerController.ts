@@ -14,6 +14,7 @@ export const offerStream = (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
 
@@ -38,8 +39,8 @@ export const offerStream = (req: Request, res: Response) => {
   });
 };
 
-export const notifyOfferSubscribers = (action: string, offerId?: string) => {
-  const payload = JSON.stringify({ action, offerId, timestamp: Date.now() });
+export const notifyOfferSubscribers = (action: string, offerId?: string, offer?: any) => {
+  const payload = JSON.stringify({ action, offerId, offer, timestamp: Date.now() });
   for (const client of sseClients) {
     try {
       client.write(`data: ${payload}\n\n`);
@@ -88,7 +89,7 @@ export const createOffer = async (req: Request, res: Response) => {
       return;
     }
     const offer = await createOfferService(data);
-    notifyOfferSubscribers('create', offer.id);
+    notifyOfferSubscribers('create', offer.id, offer);
     res.status(201).json(offer);
   } catch (err: any) {
     res.status(500).json({ message: err.message || 'Failed to create offer' });
@@ -100,7 +101,7 @@ export const updateOffer = async (req: Request, res: Response) => {
     const id = String(req.params.id);
     const data = req.body;
     const updated = await updateOfferService(id, data);
-    notifyOfferSubscribers('update', updated.id);
+    notifyOfferSubscribers('update', updated.id, updated);
     res.json(updated);
   } catch (err: any) {
     res.status(500).json({ message: err.message || 'Failed to update offer' });
