@@ -118,4 +118,19 @@ model Offer {
   updatedAt   DateTime @default(now()) @updatedAt
 }
 
+model Slide {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  description String   @db.Text
+  image       String   @db.LongText
+  badges      String?  @db.Text
+  linkUrl     String?  @default("/movies")
+  status      String   @default("Active")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+
 

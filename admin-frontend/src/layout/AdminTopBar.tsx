@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Bell, Settings, Menu, X, LogOut } from "lucide-react";
+import { Search, Settings, Menu, X, LogOut } from "lucide-react";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
 interface AdminTopBarProps {
@@ -10,6 +10,8 @@ interface AdminTopBarProps {
 export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [value, setValue] = useState(searchParams.get("q") || "");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const { admin, logout } = useAdminAuth();
   const navigate = useNavigate();
 
@@ -17,6 +19,16 @@ export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
     const q = searchParams.get("q") || "";
     setValue(q);
   }, [searchParams]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearch = (v: string) => {
     setValue(v);
@@ -58,33 +70,51 @@ export default function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
-        <button className="relative w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
-          <Bell size={16} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-accent rounded-full" />
-        </button>
+      <div className="flex items-center gap-3">
+        <span
+          title={admin?.name ?? "Admin"}
+          className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase"
+        >
+          {admin?.name?.slice(0, 2) ?? "AD"}
+        </span>
 
-        <button className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface">
-          <Settings size={16} />
-        </button>
-
-        <div className="hidden md:flex items-center gap-2 pl-2 border-l border-white/10">
-          <span
-            title={admin?.name ?? "Admin"}
-            className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center text-xs font-heading font-bold uppercase"
-          >
-            {admin?.name?.slice(0, 2) ?? "AD"}
-          </span>
+        <div className="relative" ref={settingsRef}>
           <button
-            onClick={() => {
-              logout();
-              navigate("/login", { replace: true });
-            }}
-            title="Sign out"
-            className="w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-accent hover:bg-accent/10 transition"
+            type="button"
+            onClick={() => setIsSettingsOpen((prev) => !prev)}
+            title="Settings"
+            className={`w-9 h-9 rounded bg-white/5 flex items-center justify-center text-onSurfaceVariant hover:text-onSurface transition-colors ${
+              isSettingsOpen ? "bg-white/10 text-onSurface" : ""
+            }`}
           >
-            <LogOut size={16} />
+            <Settings size={16} />
           </button>
+
+          {isSettingsOpen && (
+            <div className="absolute right-0 mt-2 w-48 rounded border border-white/10 bg-[#161619] shadow-2xl py-1 z-50 backdrop-blur-glass animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="px-3.5 py-2.5 border-b border-white/10">
+                <p className="text-xs font-heading font-semibold text-onSurface truncate">
+                  {admin?.name ?? "Administrator"}
+                </p>
+                <p className="text-[11px] font-mono text-onSurfaceVariant truncate mt-0.5">
+                  {admin?.email ?? "admin@cinestar.com"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  logout();
+                  navigate("/login", { replace: true });
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-heading text-onSurfaceVariant hover:text-accent hover:bg-white/5 transition-colors text-left"
+              >
+                <LogOut size={14} className="text-accent" />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

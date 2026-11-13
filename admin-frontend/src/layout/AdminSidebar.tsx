@@ -21,7 +21,7 @@ const links = [
   { label: "Theaters", to: "/admin/theaters", icon: <Building2 size={16} /> },
   { label: "Offers", to: "/admin/offers", icon: <Tag size={16} /> },
   { label: "Slideshow", to: "/admin/slides", icon: <Film size={16} /> },
-];
+]; 
 
 export default function AdminSidebar() {
   const { admin, logout } = useAdminAuth();
@@ -31,9 +31,11 @@ export default function AdminSidebar() {
   return (
     <aside className="w-64 bg-surface border-r border-white/10 flex flex-col p-6">
       <div className="flex items-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded bg-accent flexitems-center justify-center">
-          <Clapperboard size={16} className="text-onSurface" />
-        </div>
+        <img
+          src="/cinestar-logo.jpg"
+          alt="CineStar Logo"
+          className="w-8 h-8 rounded-full object-cover shadow-sm shrink-0"
+        />
         <div>
           <p className="font-heading font-bold text-onSurface text-sm leading-none">CineStar</p>
           <p className="font-mono text-[10px] text-onSurfaceVariant tracking-wide">

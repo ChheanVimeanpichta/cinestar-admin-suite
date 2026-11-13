@@ -80,6 +80,42 @@ export const getBookingLedger = async (_req: Request, res: Response) => {
 
 export const createBookingHandler = async (req: Request, res: Response) => {
   try {
+    const { paymentMethod, proofFileName } = req.body;
+
+    // Supported Payment Providers validation
+    const allowedPaymentMethods = [
+      'aba',
+      'aba pay',
+      'aba mobile',
+      'acleda',
+      'acleda mobile',
+      'acleda bank',
+      'wing',
+      'wing mobile',
+      'wing bank',
+      'wingpay',
+    ];
+
+    if (
+      paymentMethod &&
+      !allowedPaymentMethods.includes(String(paymentMethod).trim().toLowerCase())
+    ) {
+      res.status(400).json({
+        message: 'Invalid payment method. Only ABA Mobile, ACLEDA Bank, and WING receipts are accepted.',
+      });
+      return;
+    }
+
+    if (proofFileName) {
+      const ext = String(proofFileName).slice(String(proofFileName).lastIndexOf('.')).toLowerCase();
+      if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+        res.status(400).json({
+          message: 'Invalid receipt file type. Only JPG, JPEG, and PNG images are allowed.',
+        });
+        return;
+      }
+    }
+
     const created = await createBookingInDb(req.body);
     res.status(201).json(created);
   } catch (err: any) {
