@@ -57,7 +57,11 @@ jobs:
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
               sudo systemctl start docker
             fi
-            cd ~/deploy-admin-ui
+            if [ -d ~/deploy-admin-ui/admin-frontend ]; then
+              cd ~/deploy-admin-ui/admin-frontend
+            else
+              cd ~/deploy-admin-ui
+            fi
             sudo docker rm -f admin-ui || true
             sudo docker build -t admin-ui .
             sudo docker run -d --name admin-ui -p 3000:80 admin-ui
