@@ -426,6 +426,11 @@ export default function ShowtimeManager() {
   function handleAddShowtime(targetVenueId?: string) {
     if (!isAdmin) return;
     refreshMovies();
+    fetchTheaterVenues()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setVenues(data);
+      })
+      .catch(() => {});
     setEditingShowtime(null);
     const chosenVenueId = targetVenueId || selectedVenue?.id || selectedVenueId;
     if (chosenVenueId && typeof chosenVenueId === "string") {

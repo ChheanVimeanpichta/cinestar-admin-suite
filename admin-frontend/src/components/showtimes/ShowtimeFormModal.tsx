@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Calendar, Clock, Building2, LayoutGrid, DollarSign, Film } from "lucide-react";
 import { Movie, TheaterVenue, TheaterHall } from "../../types";
 import { ShowtimeRowData } from "../admin/ShowtimeRow";
-import { fetchHallsForVenue } from "../../services/theaterApi";
+import { fetchHallsForVenue, fetchTheaterVenues } from "../../services/theaterApi";
 
 interface ShowtimeFormModalProps {
   open: boolean;
@@ -90,7 +90,27 @@ export default function ShowtimeFormModal({
   venues = [],
   defaultVenueId,
 }: ShowtimeFormModalProps) {
-  const activeVenues = venues.length > 0 ? venues : FALLBACK_VENUES;
+  const [dynamicVenues, setDynamicVenues] = useState<TheaterVenue[]>(venues);
+
+  useEffect(() => {
+    if (venues.length > 0) {
+      setDynamicVenues(venues);
+    }
+  }, [venues]);
+
+  useEffect(() => {
+    if (open) {
+      fetchTheaterVenues()
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            setDynamicVenues(data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [open]);
+
+  const activeVenues = dynamicVenues.length > 0 ? dynamicVenues : (venues.length > 0 ? venues : FALLBACK_VENUES);
 
   const [selectedMovieId, setSelectedMovieId] = useState("");
   const [venueId, setVenueId] = useState<string>("");
@@ -136,7 +156,7 @@ export default function ShowtimeFormModal({
       setTime("18:30");
       setPrice(12);
     }
-  }, [editData, open, defaultVenueId, initialMovieId]);
+  }, [editData, open, defaultVenueId, initialMovieId, activeVenues]);
 
   useEffect(() => {
     if (!venueId) return;
