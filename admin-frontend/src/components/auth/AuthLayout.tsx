@@ -1,4 +1,3 @@
-import { Clapperboard } from "lucide-react";
 import { ReactNode } from "react";
 
 interface AuthLayoutProps {
@@ -13,12 +12,19 @@ export default function AuthLayout({ title, subtitle, children }: AuthLayoutProp
       {/* Brand panel */}
       <div className="hidden lg:flex flex-col justify-between w-[45%] p-12 bg-gradient-to-br from-[#0b0f16] via-surface to-black border-r border-white/10">
         <div className="flex items-center gap-3">
-          <span className="w-10 h-10 rounded bg-accent flex items-center justify-center">
-            <Clapperboard size={20} className="text-onSurface" />
-          </span>
-          <span className="font-heading font-black text-xl uppercase tracking-widest">
-            Cinestar
-          </span>
+          <img
+            src="/cinestar-logo.jpg"
+            alt="CineStar Logo"
+            className="w-10 h-10 rounded-full object-cover shadow-md shrink-0 border border-white/10"
+          />
+          <div>
+            <span className="font-heading font-black text-xl uppercase tracking-widest block leading-tight">
+              Cinestar
+            </span>
+            <span className="font-mono text-[10px] text-onSurfaceVariant tracking-wider uppercase">
+              Admin Suite
+            </span>
+          </div>
         </div>
 
         <div>
@@ -40,13 +46,20 @@ export default function AuthLayout({ title, subtitle, children }: AuthLayoutProp
       {/* Form panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex items-center gap-3 mb-10">
-            <span className="w-10 h-10 rounded bg-accent flex items-center justify-center">
-              <Clapperboard size={20} className="text-onSurface" />
-            </span>
-            <span className="font-heading font-black text-xl uppercase tracking-widest">
-              Cinestar
-            </span>
+          <div className="flex items-center gap-3 mb-6">
+            <img
+              src="/cinestar-logo.jpg"
+              alt="CineStar Logo"
+              className="w-10 h-10 rounded-full object-cover shadow-md shrink-0 border border-white/10"
+            />
+            <div>
+              <span className="font-heading font-black text-xl uppercase tracking-widest block leading-none">
+                CineStar
+              </span>
+              <span className="font-mono text-[10px] text-onSurfaceVariant tracking-wider uppercase">
+                Admin Suite
+              </span>
+            </div>
           </div>
 
           <h2 className="font-heading font-black uppercase text-3xl">{title}</h2>
