@@ -1,4 +1,4 @@
-import { Pencil, Trash2, UserX, UserCheck } from "lucide-react";
+import { Pencil, Trash2, Lock, Unlock } from "lucide-react";
 import { AdminUserRecord } from "../../types";
 
 const roleStyles: Record<string, string> = {
@@ -44,8 +44,8 @@ export default function UserTableRow({
 
   return (
     <tr
-      className={`border-b border-white/5 last:border-0 transition-colors ${
-        isSuspended ? "bg-red-500/[0.03]" : "hover:bg-white/[0.02]"
+      className={`border-b border-white/5 last:border-0 transition-colors hover:bg-white/[0.02] ${
+        isSuspended ? "bg-red-500/[0.03]" : ""
       }`}
     >
       <td className="py-3.5 pr-4 pl-6">
@@ -103,7 +103,7 @@ export default function UserTableRow({
               <button
                 onClick={() => onEdit?.(user)}
                 title="Edit User"
-                className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-accent hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-accent hover:bg-white/10 cursor-pointer transition-colors"
               >
                 <Pencil size={14} />
               </button>
@@ -114,24 +114,24 @@ export default function UserTableRow({
                       <button
                         onClick={() => onReactivate?.(user)}
                         title="Enable Customer (Restore Access)"
-                        className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
+                        className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-colors"
                       >
-                        <UserCheck size={14} />
+                        <Unlock size={14} />
                       </button>
                     ) : (
                       <button
                         onClick={() => onDisable?.(user)}
                         title="Disable Customer"
-                        className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                        className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-accent hover:bg-white/10 cursor-pointer transition-colors"
                       >
-                        <UserX size={14} />
+                        <Lock size={14} />
                       </button>
                     )
                   )}
                   <button
                     onClick={() => onDelete?.(user)}
                     title={user.role === "Customer" ? "Delete Customer" : "Delete User"}
-                    className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>

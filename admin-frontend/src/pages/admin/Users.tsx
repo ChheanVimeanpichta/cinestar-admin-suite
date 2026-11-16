@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, RefreshCw, UserPlus, X, Upload, Camera, Trash2 } from "lucide-react";
+import { Search, RefreshCw, UserPlus, X, Upload, Camera, Trash2, Lock } from "lucide-react";
 import { AdminUserRecord, GrowthMetricPoint, UserRole, UserAccountStatus } from "../../types";
 import {
   fetchUserManagementStats,
@@ -42,6 +42,11 @@ export default function Users() {
   const [deletingUser, setDeletingUser] = useState<AdminUserRecord | null>(null);
   const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  // Disable User State
+  const [disablingUser, setDisablingUser] = useState<AdminUserRecord | null>(null);
+  const [isSubmittingDisable, setIsSubmittingDisable] = useState(false);
+  const [disableError, setDisableError] = useState("");
 
   // Create User State
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -217,19 +222,30 @@ export default function Users() {
     setDeleteError("");
   };
 
-  const handleDisableUser = async (user: AdminUserRecord) => {
+  const handleOpenDisable = (user: AdminUserRecord) => {
     if (!isAdmin && user.role !== "Customer") {
       alert("Staff members can only manage Customer accounts.");
       return;
     }
+    setDisablingUser(user);
+    setDisableError("");
+  };
+
+  const handleConfirmDisable = async () => {
+    if (!disablingUser) return;
+    setIsSubmittingDisable(true);
+    setDisableError("");
     try {
-      await disableCustomerUser(user.id);
+      await disableCustomerUser(disablingUser.id);
       setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: "Suspended" } : u))
+        prev.map((u) => (u.id === disablingUser.id ? { ...u, status: "Suspended" } : u))
       );
+      setDisablingUser(null);
       loadData();
     } catch (err: any) {
-      alert(err?.message || "Failed to disable customer account");
+      setDisableError(err?.message || "Failed to disable customer account");
+    } finally {
+      setIsSubmittingDisable(false);
     }
   };
 
@@ -402,7 +418,7 @@ export default function Users() {
                     currentUserIsAdmin={isAdmin}
                     onEdit={handleOpenEdit}
                     onDelete={handleOpenDelete}
-                    onDisable={handleDisableUser}
+                    onDisable={handleOpenDisable}
                     onReactivate={handleReactivateUser}
                   />
                 ))
@@ -573,6 +589,54 @@ export default function Users() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Disable User Confirmation Modal */}
+      {disablingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-accent mb-3">
+              <Lock size={24} />
+              <h3 className="font-heading font-bold text-lg text-onSurface">
+                Disable Customer Account
+              </h3>
+            </div>
+
+            <p className="text-onSurfaceVariant text-sm mb-4">
+              Are you sure you want to disable customer{" "}
+              <strong className="text-onSurface">{disablingUser.name}</strong> (
+              <span className="font-mono text-xs">{disablingUser.email}</span>)?
+              <br />
+              <span className="text-onSurfaceVariant text-xs mt-2 block">
+                This account will be locked and marked as <strong>Disabled</strong>. The customer will not be able to sign in or book tickets from the website until reactivated.
+              </span>
+            </p>
+
+            {disableError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-400 text-xs">
+                {disableError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setDisablingUser(null)}
+                className="px-4 py-2 rounded bg-white/5 text-onSurface text-sm font-medium hover:bg-white/10 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDisable}
+                disabled={isSubmittingDisable}
+                className="px-4 py-2 rounded bg-accent text-onSurface text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition cursor-pointer flex items-center gap-2"
+              >
+                {isSubmittingDisable ? "Disabling..." : "Confirm Disable"}
+              </button>
+            </div>
           </div>
         </div>
       )}
