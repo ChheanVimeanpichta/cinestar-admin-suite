@@ -71,6 +71,7 @@ const movies: Movie[] = [
     synopsis: 'When the signal dies, the city follows.',
     badge: 'IMAX',
     hasBookBtn: true,
+    durationMins: 181,
   },
   {
     id: 'fairy-secret',
@@ -80,6 +81,7 @@ const movies: Movie[] = [
     score: 7.4,
     synopsis: 'Every spire hides a secret.',
     badge: '4DX',
+    durationMins: 105,
   },
   {
     id: 'jurrasic-echoes',
@@ -89,6 +91,7 @@ const movies: Movie[] = [
     score: 9.2,
     synopsis: 'Dir. A.G. IÃ±Ã¡rritu',
     badge: 'CineStar',
+    durationMins: 128,
   },
   {
     id: 'princes',
@@ -98,6 +101,7 @@ const movies: Movie[] = [
     score: 8.1,
     synopsis: 'Beyond the known universe.',
     badge: 'IMAX',
+    durationMins: 90,
   },
   {
     id: 'pirate-echoes',
@@ -106,6 +110,7 @@ const movies: Movie[] = [
     genre: 'Horror',
     score: 6.8,
     synopsis: 'No vacancy. No escape.',
+    durationMins: 115,
   },
   {
     id: 'spider-verse-2',
@@ -116,6 +121,7 @@ const movies: Movie[] = [
     synopsis: 'Rise of the empire.',
     badge: '4DX',
     hasBookBtn: true,
+    durationMins: 140,
   },
   {
     id: 'raya',
@@ -125,6 +131,7 @@ const movies: Movie[] = [
     score: null,
     synopsis: 'Trust no one.',
     badge: 'CineStar',
+    durationMins: 107,
   },
   {
     id: 'sheep',
@@ -133,6 +140,7 @@ const movies: Movie[] = [
     genre: 'Sci-Fi/Drama',
     score: null,
     synopsis: 'The signal came from nowhere.',
+    durationMins: 95,
   },
   {
     id: 'avatar',
@@ -141,6 +149,7 @@ const movies: Movie[] = [
     genre: 'Thriller',
     score: null,
     synopsis: 'The mind is the final frontier.',
+    durationMins: 192,
   },
   {
     id: 'hopper',
@@ -149,6 +158,7 @@ const movies: Movie[] = [
     genre: 'Action/Sci-Fi',
     score: null,
     synopsis: 'Humanity. Upgraded.',
+    durationMins: 110,
   },
   {
     id: 'forn',
@@ -157,6 +167,7 @@ const movies: Movie[] = [
     genre: 'Mystery/Adventure',
     score: null,
     synopsis: 'Humanity. Upgraded.',
+    durationMins: 76,
   },
   {
     id: 'barbie',
@@ -165,6 +176,7 @@ const movies: Movie[] = [
     genre: 'Drama',
     score: null,
     synopsis: 'Humanity. Upgraded.',
+    durationMins: 82,
   },
   {
     id: 'swapp',
@@ -173,6 +185,7 @@ const movies: Movie[] = [
     genre: 'Drama/Adventure',
     score: null,
     synopsis: 'Humanity. Upgraded.',
+    durationMins: 98,
   },
   {
     id: 'mermaid',
@@ -181,6 +194,7 @@ const movies: Movie[] = [
     genre: 'Drama/Adventure',
     score: null,
     synopsis: 'Humanity. Upgraded.',
+    durationMins: 75,
   },
 ];
 
@@ -930,7 +944,7 @@ export const createScreeningService = async (data: any): Promise<any> => {
   const date = data.date || (data.timeLabel === 'Today' ? todayIso : data.timeLabel) || todayIso;
   const format = (data.format || 'STANDARD').toUpperCase();
   const hall = data.hall || 'Hall 1';
-  const price = typeof data.price === 'number' ? data.price : (data.price ? Number(data.price) : 14);
+  const price = typeof data.price === 'number' ? data.price : (data.price ? Number(data.price) : 15);
 
   let venueId = data.venueId;
   let venueName = (data.venueName || data.theaterName || '').trim();
@@ -987,9 +1001,14 @@ export const createScreeningService = async (data: any): Promise<any> => {
       existingMovie = await prisma.movie.findFirst({ where: { title } });
     }
 
+    if (!existingMovie) {
+      existingMovie = await prisma.movie.findFirst();
+    }
+
     if (existingMovie) {
-      const created = await prisma.screening.create({
-        data: {
+      const saved = await prisma.screening.upsert({
+        where: { id },
+        create: {
           id,
           movieId: existingMovie.id,
           theaterId: targetTheaterId,
@@ -999,11 +1018,20 @@ export const createScreeningService = async (data: any): Promise<any> => {
           hall,
           price,
         },
+        update: {
+          movieId: existingMovie.id,
+          theaterId: targetTheaterId,
+          date,
+          time,
+          format,
+          hall,
+          price,
+        },
       });
-      newScreening.id = created.id;
+      newScreening.id = saved.id;
     }
   } catch (err) {
-    console.warn('[mockDataService] Prisma screening creation skipped/error:', err);
+    console.warn('[mockDataService] Prisma screening upsert error:', err);
   }
 
   // Update in-memory screenings
@@ -1015,6 +1043,10 @@ export const createScreeningService = async (data: any): Promise<any> => {
   }
 
   return newScreening;
+};
+
+export const updateScreeningService = async (id: string, data: any): Promise<any> => {
+  return createScreeningService({ ...data, id });
 };
 
 export const deleteScreeningService = async (id: string): Promise<boolean> => {

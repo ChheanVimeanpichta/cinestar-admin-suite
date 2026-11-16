@@ -30,6 +30,7 @@ import { fetchAllMovies } from "../../services/movieApi";
 import { fetchTheaterVenues } from "../../services/theaterApi";
 import {
   createScreeningApi,
+  updateScreeningApi,
   syncScreeningsApi,
   deleteScreeningApi,
   fetchAllScreenings,
@@ -115,6 +116,13 @@ export default function ShowtimeManager() {
   const [filterFormat, setFilterFormat] = useState("All Formats");
   const [showModal, setShowModal] = useState(false);
   const [editingShowtime, setEditingShowtime] = useState<ShowtimeRowData | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), 4000);
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   const selectedVenue = venues.find((v) => v.id === selectedVenueId) || venues[0];
 
@@ -167,6 +175,7 @@ export default function ShowtimeManager() {
             timeLabel: s.timeLabel || (s.date === new Date().toISOString().slice(0, 10) ? "Today" : s.date),
             date: s.date,
             format: s.format,
+            price: s.price !== undefined ? Number(s.price) : 12,
             seatsFilled: s.seatsFilled ?? Math.floor(Math.random() * 50 + 20),
             seatsTotal: s.seatsTotal ?? 120,
             status: s.status || "ON SALE",
@@ -443,27 +452,39 @@ export default function ShowtimeManager() {
 
   function handleEditRow(data: ShowtimeRowData) {
     if (!isAdmin) return;
+    refreshMovies();
     setEditingShowtime(data);
     setShowModal(true);
   }
 
-  function handleSaveShowtime(data: ShowtimeRowData) {
+  async function handleSaveShowtime(data: ShowtimeRowData) {
     if (!isAdmin) return;
-    if (editingShowtime) {
-      setAllShowtimes((prev) => prev.map((r) => (r.id === data.id ? data : r)));
-    } else {
-      setAllShowtimes((prev) => [data, ...prev]);
-      setPage(1);
+    try {
+      if (editingShowtime) {
+        setAllShowtimes((prev) => prev.map((r) => (r.id === data.id ? data : r)));
+        await updateScreeningApi(data.id, data);
+        setFeedback({ type: "success", message: `Updated showtime for "${data.title}" successfully!` });
+      } else {
+        setAllShowtimes((prev) => [data, ...prev]);
+        setPage(1);
+        await createScreeningApi(data);
+        setFeedback({ type: "success", message: `Added new showtime for "${data.title}"!` });
+      }
+    } catch (err: any) {
+      console.error("Failed to save showtime:", err);
+      setFeedback({ type: "error", message: err.message || "Failed to save showtime" });
+    } finally {
+      setEditingShowtime(null);
+      setShowModal(false);
     }
-    setEditingShowtime(null);
-    createScreeningApi(data);
   }
 
-  function handleDeleteRow(data: ShowtimeRowData) {
+  async function handleDeleteRow(data: ShowtimeRowData) {
     if (!isAdmin) return;
     if (window.confirm(`Delete showtime for "${data.title}" at ${data.time}?`)) {
       setAllShowtimes((prev) => prev.filter((r) => r.id !== data.id));
-      deleteScreeningApi(data.id);
+      await deleteScreeningApi(data.id);
+      setFeedback({ type: "success", message: `Deleted showtime for "${data.title}".` });
     }
   }
 
@@ -549,6 +570,19 @@ export default function ShowtimeManager() {
           )}
         </div>
       </div>
+
+      {feedback && (
+        <div
+          className={`flex items-center gap-3 p-4 rounded-xl border text-sm font-medium ${
+            feedback.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+              : "bg-red-500/10 border-red-500/30 text-red-400"
+          }`}
+        >
+          {feedback.type === "success" ? <Check size={18} /> : <AlertTriangle size={18} />}
+          <span>{feedback.message}</span>
+        </div>
+      )}
 
       {/* Theater (Venue) Tabs */}
       <div className="mb-6">

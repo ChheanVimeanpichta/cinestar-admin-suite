@@ -1,5 +1,5 @@
 import { Screening, Theater } from "../types";
-import { apiGet, apiPost, apiDelete } from "./api";
+import { apiGet, apiPost, apiPut, apiDelete } from "./api";
 import {
   getMockShowtimeRows,
   mockShowtimeStats,
@@ -18,6 +18,13 @@ export function fetchAllScreenings(): Promise<Screening[]> {
 export function createScreeningApi(data: any): Promise<any> {
   return apiPost("/screenings", data).catch((err) => {
     console.warn("Failed to create screening via API:", err);
+    return null;
+  });
+}
+
+export function updateScreeningApi(id: string, data: any): Promise<any> {
+  return apiPut(`/screenings/${id}`, data).catch((err) => {
+    console.warn("Failed to update screening via API:", err);
     return null;
   });
 }

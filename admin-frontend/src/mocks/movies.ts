@@ -10,6 +10,7 @@ export const mockMovies: Movie[] = [
     synopsis: "When the signal dies, the city follows.",
     badge: "IMAX",
     hasBookBtn: true,
+    durationMins: 181,
   },
   {
     id: "fairy-secret",
@@ -19,6 +20,7 @@ export const mockMovies: Movie[] = [
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRdLMFblwS4y1QbzHFKs9g150scJslcAsSxTcdJMwid4w&s=10",
     synopsis: "Every spire hides a secret.",
     badge: "4DX",
+    durationMins: 105,
   },
   {
     id: "jurrasic-echoes",
@@ -28,6 +30,7 @@ export const mockMovies: Movie[] = [
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXVj1jwI4fGAbXd6dOf3emm0PzHhQj9-ZK6nv13pb5dQ&s=10",
     synopsis: "Dir. A.G. Iñárritu",
     badge: "CineStar",
+    durationMins: 128,
   },
   {
     id: "princes",
@@ -37,6 +40,7 @@ export const mockMovies: Movie[] = [
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtWdSsPc3Lf9zMSAufsmKPEQ-aAiFwWyIVXNghzTx5UA&s=10",
     synopsis: "Beyond the known universe.",
     badge: "IMAX",
+    durationMins: 90,
   },
   {
     id: "pirate-echoes",
@@ -45,6 +49,7 @@ export const mockMovies: Movie[] = [
     score: 6.8,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdXmUXa0G1ezo-TA0vrr_GAhisBMegQz09jeJbDCgkRw&s=10",
     synopsis: "No vacancy. No escape.",
+    durationMins: 115,
   },
   {
     id: "spider-verse-2",
@@ -55,6 +60,7 @@ export const mockMovies: Movie[] = [
     synopsis: "Rise of the empire.",
     badge: "4DX",
     hasBookBtn: true,
+    durationMins: 140,
   },
   {
     id: "raya",
@@ -64,6 +70,7 @@ export const mockMovies: Movie[] = [
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQm9pl3ezvWPpgU1UoObqXTpjE5Q4GskYSfKcZJNNNvFw&s=10",
     synopsis: "Trust no one.",
     badge: "CineStar",
+    durationMins: 107,
   },
   {
     id: "sheep",
@@ -72,6 +79,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQnkapobjb_5fwfdC2YryPjTwmooJ8HLLcQIs0Aomi0A&s=10",
     synopsis: "The signal came from nowhere.",
+    durationMins: 95,
   },
   {
     id: "avatar",
@@ -80,6 +88,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsteWOIgIfjtkiYRnJNRzinTz0TXz3d3Z4bxdkoI1u2Q&s=10",
     synopsis: "The mind is the final frontier.",
+    durationMins: 192,
   },
   {
     id: "hopper",
@@ -88,6 +97,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTF2_jzf8Bot1lnxHSeU7iw5ZCTXLsAD9EkRWqOsVAzZw&s=10",
     synopsis: "Humanity. Upgraded.",
+    durationMins: 110,
   },
   {
     id: "forn",
@@ -96,6 +106,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxbLJ65BPJksC0H21bjjmYF8-0LfHkmVrHnwSo4o09kQ&s=10",
     synopsis: "Humanity. Upgraded.",
+    durationMins: 76,
   },
   {
     id: "barbie",
@@ -104,6 +115,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2LRKh6UujWBbI5KWrAY0EGn93XVUn-shxv0EMLZ6qGw&s=10",
     synopsis: "Humanity. Upgraded.",
+    durationMins: 82,
   },
   {
     id: "swapp",
@@ -112,6 +124,7 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSF5wtLqYgJrada9i_nneLJWtnWe31R6zgAi541ky0bg&s=10",
     synopsis: "Humanity. Upgraded.",
+    durationMins: 98,
   },
   {
     id: "mermaid",
@@ -120,5 +133,6 @@ export const mockMovies: Movie[] = [
     score: null,
     poster: "https://m.media-amazon.com/images/M/MV5BZWMwYWFmMDgtYTAyMy00OWRjLTgxYTEtZWYyZjcwNDNjY2I0XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
     synopsis: "Humanity. Upgraded.",
+    durationMins: 75,
   },
 ];

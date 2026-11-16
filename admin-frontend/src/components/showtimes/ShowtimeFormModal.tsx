@@ -79,6 +79,19 @@ const FALLBACK_HALLS: Record<string, TheaterHall[]> = {
   ],
 };
 
+function normalizeTimeTo24h(timeStr?: string): string {
+  if (!timeStr) return "18:00";
+  const trimmed = timeStr.trim();
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return trimmed;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const modifier = match[3]?.toUpperCase();
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, "0")}:${minutes}`;
+}
+
 export default function ShowtimeFormModal({
   open,
   onClose,
@@ -130,21 +143,45 @@ export default function ShowtimeFormModal({
 
     if (editData) {
       const matchedVenue = activeVenues.find(
-        (v) => v.id === editData.venueId || v.name.toLowerCase() === editData.theaterName?.toLowerCase()
+        (v) =>
+          (editData.venueId && v.id === editData.venueId) ||
+          (editData.theaterName && v.name.toLowerCase() === editData.theaterName.toLowerCase()) ||
+          (editData.venueName && v.name.toLowerCase() === editData.venueName.toLowerCase()) ||
+          (editData.theaterName && v.name.toLowerCase().includes(editData.theaterName.toLowerCase())) ||
+          (editData.venueName && v.name.toLowerCase().includes(editData.venueName.toLowerCase()))
       );
       const initialVenue = matchedVenue || activeVenues[0];
       setVenueId(initialVenue?.id || "v-001");
 
       setHallName(editData.hall || "Hall 1");
-      setTime(editData.time || "18:00");
+      setTime(normalizeTimeTo24h(editData.time || "18:00"));
       setFormat(editData.format || "2D");
-      setPrice(12);
+      setPrice(editData.price !== undefined ? Number(editData.price) : 12);
       setSeatsTotal(editData.seatsTotal || 120);
 
-      const movie = movies.find((m) => m.title === editData.title);
-      if (movie) setSelectedMovieId(movie.id);
+      const targetTitle = (editData.title || "").trim().toLowerCase();
+      const movie = movies.find(
+        (m) =>
+          (editData.movieId && m.id === editData.movieId) ||
+          (targetTitle && m.title.trim().toLowerCase() === targetTitle) ||
+          (targetTitle && m.title.trim().toLowerCase().includes(targetTitle)) ||
+          (targetTitle && targetTitle.includes(m.title.trim().toLowerCase()))
+      );
+      if (movie) {
+        setSelectedMovieId(movie.id);
+      } else if (editData.movieId) {
+        setSelectedMovieId(editData.movieId);
+      } else if (movies.length > 0) {
+        setSelectedMovieId(movies[0].id);
+      }
 
-      setDate(new Date().toISOString().slice(0, 10));
+      const validDate =
+        editData.date && /^\d{4}-\d{2}-\d{2}$/.test(editData.date)
+          ? editData.date
+          : editData.timeLabel && /^\d{4}-\d{2}-\d{2}$/.test(editData.timeLabel)
+            ? editData.timeLabel
+            : new Date().toISOString().slice(0, 10);
+      setDate(validDate);
     } else {
       const initialVId = defaultVenueId && activeVenues.some((v) => v.id === defaultVenueId)
         ? defaultVenueId
@@ -156,7 +193,7 @@ export default function ShowtimeFormModal({
       setTime("18:30");
       setPrice(12);
     }
-  }, [editData, open, defaultVenueId, initialMovieId, activeVenues]);
+  }, [editData, open, defaultVenueId, initialMovieId, activeVenues, movies]);
 
   useEffect(() => {
     if (!venueId) return;
@@ -258,27 +295,41 @@ export default function ShowtimeFormModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMovie || !date || !time) return;
+    if (!date || !time) return;
+
+    const movie =
+      movies.find((m) => m.id === selectedMovieId) ||
+      (editData?.title
+        ? movies.find((m) => m.title.trim().toLowerCase() === editData.title.trim().toLowerCase())
+        : undefined) ||
+      (editData?.movieId ? movies.find((m) => m.id === editData.movieId) : undefined);
+
+    const movieId = movie?.id || editData?.movieId || selectedMovieId || `mv-${Date.now()}`;
+    const title = movie?.title || editData?.title || "Untitled Movie";
+    const posterUrl = movie?.poster || editData?.posterUrl || "";
+    const durationMins = movie?.durationMins || editData?.durationMins || 120;
+    const genre = movie?.genre || editData?.genre || "";
 
     const currentHall = halls.find((h) => h.name === hallName);
     const showtime: ShowtimeRowData = {
       id: editData?.id || `sc-${Date.now()}`,
-      movieId: selectedMovie.id,
-      posterUrl: selectedMovie.poster || "",
-      title: selectedMovie.title,
-      durationMins: selectedMovie.durationMins || 120,
-      genre: selectedMovie.genre || "",
-      theaterName: selectedVenue?.name || "Cinema Venue",
-      venueId: selectedVenue?.id,
-      venueName: selectedVenue?.name,
-      hall: hallName || "Hall 1",
-      hallId: currentHall?.id,
+      movieId,
+      posterUrl,
+      title,
+      durationMins,
+      genre,
+      theaterName: selectedVenue?.name || editData?.theaterName || "Cinema Venue",
+      venueId: selectedVenue?.id || editData?.venueId || "v-001",
+      venueName: selectedVenue?.name || editData?.venueName || "Cinema Venue",
+      hall: hallName || editData?.hall || "Hall 1",
+      hallId: currentHall?.id || editData?.hallId,
       time,
       timeLabel: computeTimeLabel(date),
       date,
       format,
+      price: price > 0 ? price : 12,
       seatsFilled: editData?.seatsFilled || 0,
-      seatsTotal: currentHall?.capacity || seatsTotal || 120,
+      seatsTotal: currentHall?.capacity || seatsTotal || editData?.seatsTotal || 120,
       status: editData?.status || "ON SALE",
     };
     onSave(showtime);

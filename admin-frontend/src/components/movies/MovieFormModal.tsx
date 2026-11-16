@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { X, Upload, Calendar, ChevronDown, Check, Plus, Tag } from "lucide-react";
+import { X, Upload, Calendar, ChevronDown, Check, Plus, Tag, Clock } from "lucide-react";
 import { Movie } from "../../types";
 
 interface MovieFormModalProps {
@@ -54,6 +54,7 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
   const [customGenres, setCustomGenres] = useState<string[]>([]);
   const genreDropdownRef = useRef<HTMLDivElement>(null);
 
+  const [durationMins, setDurationMins] = useState<number | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [synopsis, setSynopsis] = useState("");
   const [poster, setPoster] = useState("");
@@ -68,6 +69,7 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
     setGenre("");
     setGenreSearch("");
     setIsGenreOpen(false);
+    setDurationMins(null);
     setScore(null);
     setSynopsis("");
     setPoster("");
@@ -82,6 +84,11 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
       setGenre(editMovie.genre);
       setGenreSearch(editMovie.genre);
       setIsGenreOpen(false);
+      setDurationMins(
+        editMovie.durationMins !== undefined && editMovie.durationMins !== null
+          ? Number(editMovie.durationMins)
+          : null
+      );
       setScore(editMovie.score);
       setSynopsis(editMovie.synopsis);
       setPoster(editMovie.poster);
@@ -160,6 +167,15 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
     handleSelectGenre(trimmed);
   };
 
+  const formattedRuntime = useMemo(() => {
+    if (!durationMins || durationMins <= 0) return null;
+    const h = Math.floor(durationMins / 60);
+    const m = durationMins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  }, [durationMins]);
+
   if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -173,6 +189,10 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
       poster: poster || "https://picsum.photos/seed/new-movie/300/450",
       badge: badge || undefined,
       hasBookBtn,
+      durationMins:
+        durationMins !== null && durationMins !== undefined && !isNaN(durationMins) && durationMins > 0
+          ? Number(durationMins)
+          : undefined,
       releaseDate: releaseDate || undefined,
     };
     onSave(movie);
@@ -428,8 +448,38 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
             </div>
           </div>
 
-          {/* Score + Badge + Release Date row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Run Time & Score row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Clock size={12} className="text-accent" />
+                  Run Time (Minutes)
+                </span>
+                {formattedRuntime && (
+                  <span className="text-[10px] font-mono text-accent font-semibold">
+                    {formattedRuntime}
+                  </span>
+                )}
+              </label>
+              <input
+                type="number"
+                value={durationMins ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  if (val === "") {
+                    setDurationMins(null);
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    setDurationMins(isNaN(parsed) ? null : Math.max(0, parsed));
+                  }
+                }}
+                min="1"
+                max="600"
+                placeholder="e.g. 120"
+                className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors font-mono"
+              />
+            </div>
             <div>
               <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
                 Score (0-10)
@@ -445,6 +495,10 @@ export default function MovieFormModal({ open, onClose, onSave, editMovie, isSav
                 className="w-full bg-white/5 border border-white/10 rounded px-4 py-3 text-body-md text-onSurface placeholder:text-onSurfaceVariant outline-none focus:border-accent transition-colors"
               />
             </div>
+          </div>
+
+          {/* Badge & Release Date row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block font-mono text-[10px] uppercase tracking-wide text-onSurfaceVariant mb-2">
                 Badge

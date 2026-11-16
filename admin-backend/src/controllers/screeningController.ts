@@ -4,6 +4,7 @@ import {
   getScreenings,
   getSeatsForScreening,
   createScreeningService,
+  updateScreeningService,
   deleteScreeningService,
 } from '../services/mockDataService.js';
 
@@ -17,6 +18,15 @@ export const createScreeningHandler = async (req: Request, res: Response) => {
     res.status(201).json(created);
   } catch (err: any) {
     res.status(500).json({ message: err.message || 'Failed to create screening' });
+  }
+};
+
+export const updateScreeningHandler = async (req: Request, res: Response) => {
+  try {
+    const updated = await updateScreeningService(String(req.params.id), req.body);
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || 'Failed to update screening' });
   }
 };
 

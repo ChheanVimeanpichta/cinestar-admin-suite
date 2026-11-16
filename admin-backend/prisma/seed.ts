@@ -106,6 +106,7 @@ async function main() {
       synopsis: 'When the signal dies, the city follows.',
       badge: 'IMAX',
       hasBookBtn: true,
+      durationMins: 181,
     },
     {
       id: 'fairy-secret',
@@ -115,6 +116,7 @@ async function main() {
       score: 7.4,
       synopsis: 'Every spire hides a secret.',
       badge: '4DX',
+      durationMins: 105,
     },
     {
       id: 'jurrasic-echoes',
@@ -124,6 +126,7 @@ async function main() {
       score: 9.2,
       synopsis: 'Dir. A.G. Iñárritu',
       badge: 'CineStar',
+      durationMins: 128,
     },
     {
       id: 'princes',
@@ -133,6 +136,7 @@ async function main() {
       score: 8.1,
       synopsis: 'Beyond the known universe.',
       badge: 'IMAX',
+      durationMins: 90,
     },
     {
       id: 'pirate-echoes',
@@ -141,6 +145,7 @@ async function main() {
       genre: 'Horror',
       score: 6.8,
       synopsis: 'No vacancy. No escape.',
+      durationMins: 115,
     },
     {
       id: 'spider-verse-2',
@@ -151,6 +156,7 @@ async function main() {
       synopsis: 'Rise of the empire.',
       badge: '4DX',
       hasBookBtn: true,
+      durationMins: 140,
     },
     {
       id: 'raya',
@@ -160,6 +166,7 @@ async function main() {
       score: null,
       synopsis: 'Trust no one.',
       badge: 'CineStar',
+      durationMins: 107,
     },
     {
       id: 'sheep',
@@ -168,6 +175,7 @@ async function main() {
       genre: 'Sci-Fi/Drama',
       score: null,
       synopsis: 'The signal came from nowhere.',
+      durationMins: 95,
     },
     {
       id: 'avatar',
@@ -176,6 +184,7 @@ async function main() {
       genre: 'Thriller',
       score: null,
       synopsis: 'The mind is the final frontier.',
+      durationMins: 192,
     },
     {
       id: 'hopper',
@@ -184,6 +193,7 @@ async function main() {
       genre: 'Action/Sci-Fi',
       score: null,
       synopsis: 'Humanity. Upgraded.',
+      durationMins: 110,
     },
     {
       id: 'forn',
@@ -192,6 +202,7 @@ async function main() {
       genre: 'Mystery/Adventure',
       score: null,
       synopsis: 'Humanity. Upgraded.',
+      durationMins: 76,
     },
     {
       id: 'barbie',
@@ -200,6 +211,7 @@ async function main() {
       genre: 'Drama',
       score: null,
       synopsis: 'Humanity. Upgraded.',
+      durationMins: 82,
     },
     {
       id: 'swapp',
@@ -208,6 +220,7 @@ async function main() {
       genre: 'Drama/Adventure',
       score: null,
       synopsis: 'Humanity. Upgraded.',
+      durationMins: 98,
     },
     {
       id: 'mermaid',
@@ -216,13 +229,16 @@ async function main() {
       genre: 'Drama/Adventure',
       score: null,
       synopsis: 'Humanity. Upgraded.',
+      durationMins: 75,
     },
   ];
 
   for (const m of initialMovies) {
     await prisma.movie.upsert({
       where: { id: m.id },
-      update: {},
+      update: {
+        durationMins: m.durationMins ?? null,
+      },
       create: {
         id: m.id,
         title: m.title,
@@ -232,6 +248,7 @@ async function main() {
         synopsis: m.synopsis,
         badge: m.badge ?? null,
         hasBookBtn: m.hasBookBtn ?? false,
+        durationMins: m.durationMins ?? null,
       },
     });
   }

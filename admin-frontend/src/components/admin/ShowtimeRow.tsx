@@ -19,6 +19,7 @@ export interface ShowtimeRowData {
   timeLabel: string; // e.g. "Today"
   date?: string;
   format: string;
+  price?: number;
   seatsFilled: number;
   seatsTotal: number;
   status: ShowtimeStatus;
@@ -108,15 +109,22 @@ export default function ShowtimeRow({
         <p className="text-onSurfaceVariant text-xs">{data.timeLabel}</p>
       </td>
 
-      {/* Format */}
+      {/* Format & Price */}
       <td className="pr-4">
-        <span
-          className={`px-2 py-1 rounded text-[10px] font-mono font-semibold ${
-            formatStyles[data.format] ?? "bg-white/10 text-onSurfaceVariant"
-          }`}
-        >
-          {data.format}
-        </span>
+        <div className="flex flex-col gap-1 items-start">
+          <span
+            className={`px-2 py-1 rounded text-[10px] font-mono font-semibold ${
+              formatStyles[data.format] ?? "bg-white/10 text-onSurfaceVariant"
+            }`}
+          >
+            {data.format}
+          </span>
+          {data.price !== undefined && (
+            <span className="text-[11px] font-mono text-accent font-semibold">
+              ${Number(data.price).toFixed(2)}
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Seats / occupancy */}

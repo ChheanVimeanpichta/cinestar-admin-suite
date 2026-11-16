@@ -4,6 +4,7 @@ import {
   getSeats,
   listScreenings,
   createScreeningHandler,
+  updateScreeningHandler,
   syncScreeningsHandler,
   deleteScreeningHandler,
 } from '../controllers/screeningController.js';
@@ -11,6 +12,7 @@ import {
 const router = Router();
 router.get('/', listScreenings);
 router.post('/', createScreeningHandler);
+router.put('/:id', updateScreeningHandler);
 router.post('/sync', syncScreeningsHandler);
 router.delete('/:id', deleteScreeningHandler);
 router.get('/:id/seats', getSeats);
