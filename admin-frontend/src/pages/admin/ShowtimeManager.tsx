@@ -17,6 +17,8 @@ import {
   Film,
   Building2,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import ShowtimeStatCard from "../../components/admin/ShowtimeStatCard";
 import ShowtimeRow, { ShowtimeRowData } from "../../components/admin/ShowtimeRow";
@@ -751,7 +753,7 @@ export default function ShowtimeManager() {
                       {allOnPageSelected && <Check className="h-3 w-3" />}
                     </button>
                   ) : (
-                    <span className="text-white/20 text-xs font-mono">â€¢</span>
+                    <span className="text-white/20 text-xs font-mono">•</span>
                   )}
                 </th>
                 <th className="py-3 font-medium">Movie</th>
@@ -787,7 +789,7 @@ export default function ShowtimeManager() {
           <div className="flex items-center justify-between px-6 py-4 border-t border-white/10">
             <p className="text-onSurfaceVariant text-xs font-mono">
               {totalCount > 0
-                ? `Showing ${(currentPage - 1) * pageSize + 1}â€“${Math.min(
+                ? `Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(
                     currentPage * pageSize,
                     totalCount
                   )} of ${totalCount}`
@@ -797,15 +799,16 @@ export default function ShowtimeManager() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 transition"
+                className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 cursor-pointer disabled:cursor-default transition"
+                title="Previous page"
               >
-                â€¹
+                <ChevronLeft size={16} />
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded flex items-center justify-center text-xs font-mono transition ${
+                  className={`w-8 h-8 rounded flex items-center justify-center text-xs font-mono cursor-pointer transition ${
                     currentPage === p
                       ? "bg-accent text-onSurface font-bold"
                       : "text-onSurfaceVariant hover:bg-white/5"
@@ -817,9 +820,10 @@ export default function ShowtimeManager() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages || totalPages === 0}
-                className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 transition"
+                className="w-8 h-8 rounded flex items-center justify-center text-onSurfaceVariant hover:bg-white/5 disabled:opacity-30 cursor-pointer disabled:cursor-default transition"
+                title="Next page"
               >
-                â€º
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -894,7 +898,7 @@ export default function ShowtimeManager() {
                           </p>
                           <p className="text-[10px] text-onSurfaceVariant font-mono mt-0.5 flex items-center gap-1 truncate">
                             <Film size={10} className="shrink-0" />
-                            <span className="truncate">{show.theaterName ? `${show.theaterName} â€¢ ${show.hall}` : show.hall}</span>
+                            <span className="truncate">{show.theaterName ? `${show.theaterName} • ${show.hall}` : show.hall}</span>
                           </p>
                         </CardWrapper>
                       );

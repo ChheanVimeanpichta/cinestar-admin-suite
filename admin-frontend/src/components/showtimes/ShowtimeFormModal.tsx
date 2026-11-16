@@ -373,7 +373,7 @@ export default function ShowtimeFormModal({
                   <p className="font-mono text-[11px] text-onSurfaceVariant mt-1">
                     {selectedMovie.genre || "General"} &bull;{" "}
                     {selectedMovie.durationMins ? `${selectedMovie.durationMins} MIN` : "120 MIN"}
-                    {selectedMovie.score != null && ` â€¢ â­ ${selectedMovie.score}`}
+                    {selectedMovie.score != null && ` • ★ ${selectedMovie.score}`}
                   </p>
                   {selectedMovie.releaseDate && (
                     <p className="font-mono text-[10px] text-onSurfaceVariant/70 mt-0.5">
@@ -439,7 +439,7 @@ export default function ShowtimeFormModal({
                 ) : (
                   halls.map((h) => (
                     <option key={h.id} value={h.name} className="bg-[#1a1a1a]">
-                      {h.name} ({h.capacity} seats â€¢ {h.screenType})
+                      {h.name} ({h.capacity} seats • {h.screenType})
                     </option>
                   ))
                 )}
