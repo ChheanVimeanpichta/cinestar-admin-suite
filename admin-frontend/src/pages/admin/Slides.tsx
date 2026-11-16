@@ -316,7 +316,7 @@ export default function Slides() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
-                      "https://picsum.photos/seed/fallback/1600/900";
+                      "/slides/slide-1.jpg";
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -502,7 +502,7 @@ export default function Slides() {
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
-                          "https://picsum.photos/seed/hero-preview/1600/900";
+                          "/slides/slide-1.jpg";
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />

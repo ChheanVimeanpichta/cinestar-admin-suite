@@ -8,7 +8,7 @@ import {
   updateUser,
 } from '../services/mockDataService.js';
 import { deleteAdmin, updateAdmin } from '../services/authService.js';
-import { deleteCustomer, updateCustomer } from '../services/customerService.js';
+import { deleteCustomer, permanentlyDeleteCustomer, updateCustomer } from '../services/customerService.js';
 
 export const listUsers = async (_req: Request, res: Response) => {
   res.json(await getUsers());
@@ -81,28 +81,49 @@ export const updateUserRecord = async (req: Request, res: Response) => {
 export const deleteUserById = async (req: Request, res: Response) => {
   const id = String(req.params.id);
   const requesterRole = (req as any).admin?.role;
+  const isDisableOnly = req.query.mode === 'disable';
 
-  // Staff can ONLY disable Customer accounts
+  // Staff can ONLY manage Customer accounts
   if (requesterRole === 'staff') {
-    const successCust = await deleteCustomer(id);
-    if (successCust) {
-      res.json({ success: true, message: 'Customer account disabled successfully' });
-      return;
+    if (isDisableOnly) {
+      const successCust = await deleteCustomer(id);
+      if (successCust) {
+        res.json({ success: true, message: 'Customer account disabled successfully' });
+        return;
+      }
+    } else {
+      const deleted = await permanentlyDeleteCustomer(id);
+      if (deleted) {
+        res.json({ success: true, message: 'Customer account deleted successfully' });
+        return;
+      }
     }
-    res.status(403).json({ message: 'Staff can only disable customer accounts' });
+    res.status(403).json({ message: 'Staff can only manage customer accounts' });
     return;
   }
 
+  // Admin: Check Admin table first
   const successAdmin = await deleteAdmin(id);
   if (successAdmin) {
     res.json({ success: true, message: 'User deleted successfully' });
     return;
   }
-  const successCust = await deleteCustomer(id);
-  if (successCust) {
-    res.json({ success: true, message: 'Customer account disabled successfully' });
-    return;
+
+  // Customer account
+  if (isDisableOnly) {
+    const successCust = await deleteCustomer(id);
+    if (successCust) {
+      res.json({ success: true, message: 'Customer account disabled successfully' });
+      return;
+    }
+  } else {
+    const deleted = await permanentlyDeleteCustomer(id);
+    if (deleted) {
+      res.json({ success: true, message: 'Customer account deleted successfully' });
+      return;
+    }
   }
+
   res.status(404).json({ message: 'User not found' });
 };
 

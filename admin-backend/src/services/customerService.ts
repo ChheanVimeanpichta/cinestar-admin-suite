@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { prisma } from '../config/db.js';
 
 export interface CustomerAccount {
@@ -111,6 +113,7 @@ export const registerOrUpdateCustomer = async (data: {
   password?: string;
   phone?: string;
   avatarUrl?: string;
+  googleId?: string;
 }): Promise<CustomerAccount> => {
   const normalizedEmail = data.email.toLowerCase();
   const existing = await prisma.customer.findUnique({
@@ -149,6 +152,16 @@ export const registerOrUpdateCustomer = async (data: {
     },
   });
 
+  if (data.googleId) {
+    try {
+      await prisma.$executeRawUnsafe(
+        'UPDATE Customer SET googleId = ? WHERE id = ?',
+        data.googleId,
+        saved.id
+      );
+    } catch {}
+  }
+
   return {
     id: saved.id,
     name: saved.name,
@@ -173,6 +186,37 @@ export const deleteCustomer = async (id: string): Promise<boolean> => {
     });
     return true;
   } catch {
+    return false;
+  }
+};
+
+export const permanentlyDeleteCustomer = async (id: string): Promise<boolean> => {
+  try {
+    const cust = await prisma.customer.findUnique({ where: { id } });
+    if (!cust) return false;
+
+    // Delete from MySQL Customer table
+    await prisma.customer.delete({ where: { id } });
+
+    // Also delete from User table if present
+    await prisma.$queryRawUnsafe(`DELETE FROM User WHERE id = ? OR email = ?`, cust.id, cust.email.toLowerCase()).catch(() => {});
+
+    // Also remove from data/customers.json if file exists
+    try {
+      const customersFile = path.resolve(process.cwd(), 'data/customers.json');
+      if (fs.existsSync(customersFile)) {
+        const raw = fs.readFileSync(customersFile, 'utf-8');
+        const list = JSON.parse(raw);
+        const filtered = list.filter((c: any) => c.id !== id && c.email.toLowerCase() !== cust.email.toLowerCase());
+        fs.writeFileSync(customersFile, JSON.stringify(filtered, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      console.warn('[customerService] Error updating data/customers.json on delete:', e);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Error permanently deleting customer:', err);
     return false;
   }
 };

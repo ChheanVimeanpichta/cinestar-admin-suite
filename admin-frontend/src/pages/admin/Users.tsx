@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Search, RefreshCw, UserPlus, X, AlertTriangle, Upload, Camera, Trash2 } from "lucide-react";
+import { Search, RefreshCw, UserPlus, X, Upload, Camera, Trash2 } from "lucide-react";
 import { AdminUserRecord, GrowthMetricPoint, UserRole, UserAccountStatus } from "../../types";
 import {
   fetchUserManagementStats,
@@ -7,6 +7,7 @@ import {
   fetchUserGrowthMetrics,
   updateAdminUser,
   deleteAdminUser,
+  disableCustomerUser,
   apiPost,
 } from "../../services/api";
 import { useAdminAuth } from "../../context/AdminAuthContext";
@@ -209,11 +210,27 @@ export default function Users() {
 
   const handleOpenDelete = (user: AdminUserRecord) => {
     if (!isAdmin && user.role !== "Customer") {
-      alert("Staff members can only disable Customer accounts.");
+      alert("Staff members can only manage Customer accounts.");
       return;
     }
     setDeletingUser(user);
     setDeleteError("");
+  };
+
+  const handleDisableUser = async (user: AdminUserRecord) => {
+    if (!isAdmin && user.role !== "Customer") {
+      alert("Staff members can only manage Customer accounts.");
+      return;
+    }
+    try {
+      await disableCustomerUser(user.id);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: "Suspended" } : u))
+      );
+      loadData();
+    } catch (err: any) {
+      alert(err?.message || "Failed to disable customer account");
+    }
   };
 
   const handleReactivateUser = async (user: AdminUserRecord) => {
@@ -238,18 +255,11 @@ export default function Users() {
     setDeleteError("");
     try {
       await deleteAdminUser(deletingUser.id);
-      // For customer, optimistically mark as Suspended so they stay visible
-      if (deletingUser.role === "Customer") {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === deletingUser.id ? { ...u, status: "Suspended" } : u))
-        );
-      } else {
-        setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
-      }
+      setUsers((prev) => prev.filter((u) => u.id !== deletingUser.id));
       setDeletingUser(null);
       loadData();
     } catch (err: any) {
-      setDeleteError(err?.message || "Failed to process user action");
+      setDeleteError(err?.message || "Failed to delete user");
     } finally {
       setIsSubmittingDelete(false);
     }
@@ -392,6 +402,7 @@ export default function Users() {
                     currentUserIsAdmin={isAdmin}
                     onEdit={handleOpenEdit}
                     onDelete={handleOpenDelete}
+                    onDisable={handleDisableUser}
                     onReactivate={handleReactivateUser}
                   />
                 ))
@@ -566,33 +577,25 @@ export default function Users() {
         </div>
       )}
 
-      {/* Delete / Disable User Confirmation Modal */}
+      {/* Delete User Confirmation Modal */}
       {deletingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-surface-variant border border-white/10 rounded-lg max-w-md w-full p-6 shadow-2xl">
             <div className="flex items-center gap-3 text-red-400 mb-3">
-              <AlertTriangle size={24} />
+              <Trash2 size={24} />
               <h3 className="font-heading font-bold text-lg text-onSurface">
-                {deletingUser.role === "Customer" ? "Disable Customer Account" : "Delete Staff Account"}
+                {deletingUser.role === "Customer" ? "Delete Customer Account" : "Delete Staff Account"}
               </h3>
             </div>
 
             <p className="text-onSurfaceVariant text-sm mb-4">
-              {deletingUser.role === "Customer" ? (
-                <>
-                  Are you sure you want to disable customer{" "}
-                  <strong className="text-onSurface">{deletingUser.name}</strong> (
-                  <span className="font-mono text-xs">{deletingUser.email}</span>)?
-                  This customer will be marked as <strong>Disabled</strong>, and their access to sign in or book tickets from the website will be blocked.
-                </>
-              ) : (
-                <>
-                  Are you sure you want to delete staff user{" "}
-                  <strong className="text-onSurface">{deletingUser.name}</strong> (
-                  <span className="font-mono text-xs">{deletingUser.email}</span>)?
-                  This action is permanent and cannot be undone.
-                </>
-              )}
+              Are you sure you want to permanently delete {deletingUser.role === "Customer" ? "customer" : "staff user"}{" "}
+              <strong className="text-onSurface">{deletingUser.name}</strong> (
+              <span className="font-mono text-xs">{deletingUser.email}</span>)?
+              <br />
+              <span className="text-red-400 text-xs mt-2 block">
+                This action is permanent and will completely remove the user account from the database.
+              </span>
             </p>
 
             {deleteError && (
@@ -615,9 +618,7 @@ export default function Users() {
                 disabled={isSubmittingDelete}
                 className="px-4 py-2 rounded bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-50 transition"
               >
-                {isSubmittingDelete
-                  ? (deletingUser.role === "Customer" ? "Disabling..." : "Deleting...")
-                  : (deletingUser.role === "Customer" ? "Confirm Disable" : "Confirm Delete")}
+                {isSubmittingDelete ? "Deleting..." : "Confirm Delete"}
               </button>
             </div>
           </div>

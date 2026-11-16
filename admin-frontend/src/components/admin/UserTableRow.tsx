@@ -25,6 +25,7 @@ interface UserTableRowProps {
   currentUserIsAdmin?: boolean;
   onEdit?: (user: AdminUserRecord) => void;
   onDelete?: (user: AdminUserRecord) => void;
+  onDisable?: (user: AdminUserRecord) => void;
   onReactivate?: (user: AdminUserRecord) => void;
 }
 
@@ -33,6 +34,7 @@ export default function UserTableRow({
   currentUserIsAdmin = false,
   onEdit,
   onDelete,
+  onDisable,
   onReactivate,
 }: UserTableRowProps) {
   const isSuspended = user.status === "Suspended";
@@ -107,26 +109,31 @@ export default function UserTableRow({
               </button>
               {!isPrimaryAdmin && (
                 <>
-                  {user.role === "Customer" && isSuspended ? (
-                    <button
-                      onClick={() => onReactivate?.(user)}
-                      title="Enable Customer (Restore Access)"
-                      className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
-                    >
-                      <UserCheck size={14} />
-                    </button>
-                  ) : null}
+                  {user.role === "Customer" && (
+                    isSuspended ? (
+                      <button
+                        onClick={() => onReactivate?.(user)}
+                        title="Enable Customer (Restore Access)"
+                        className="p-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
+                      >
+                        <UserCheck size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => onDisable?.(user)}
+                        title="Disable Customer"
+                        className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+                      >
+                        <UserX size={14} />
+                      </button>
+                    )
+                  )}
                   <button
                     onClick={() => onDelete?.(user)}
-                    title={user.role === "Customer" ? (isSuspended ? "Already Disabled" : "Disable Customer") : "Delete User"}
-                    disabled={user.role === "Customer" && isSuspended}
-                    className={`p-1.5 rounded bg-white/5 transition-colors ${
-                      user.role === "Customer" && isSuspended
-                        ? "opacity-30 cursor-not-allowed text-onSurfaceVariant"
-                        : "text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10"
-                    }`}
+                    title={user.role === "Customer" ? "Delete Customer" : "Delete User"}
+                    className="p-1.5 rounded bg-white/5 text-onSurfaceVariant hover:text-red-400 hover:bg-red-500/10 transition-colors"
                   >
-                    {user.role === "Customer" ? <UserX size={14} /> : <Trash2 size={14} />}
+                    <Trash2 size={14} />
                   </button>
                 </>
               )}

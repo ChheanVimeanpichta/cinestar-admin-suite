@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 const rawUrl =
   process.env.DATABASE_URL ??
-  'mysql://admin:Pa$$w0rdPa$$w0rd@movie.cpys426owsu6.ap-southeast-1.rds.amazonaws.com:3306/cinestar?connect_timeout=30';
+  'mysql://admin:cinestar%24%24%24123@cinestarmovie.c5y626m2skob.us-east-1.rds.amazonaws.com:3306/cinestar?connect_timeout=30';
 
 function buildDatabaseUrl(url: string): string {
   try {
@@ -14,7 +14,7 @@ function buildDatabaseUrl(url: string): string {
       parsed.searchParams.set('pool_timeout', '30');
     }
     if (!parsed.searchParams.has('connection_limit')) {
-      parsed.searchParams.set('connection_limit', '10');
+      parsed.searchParams.set('connection_limit', '5');
     }
     return parsed.toString();
   } catch {

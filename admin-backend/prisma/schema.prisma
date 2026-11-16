@@ -24,11 +24,24 @@ model Customer {
   phone        String?
   password     String?
   avatarUrl    String?  @db.LongText
+  googleId     String?  @unique
   role         String   @default("Customer")
   status       String   @default("Active")
   joinDate     String?
   bookingCount Int      @default(0)
   createdAt    DateTime @default(now())
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String?
+  name         String
+  phone        String?
+  googleId     String?   @unique
+  avatarUrl    String?   @db.Text
+  authProvider String    @default("local")
+  createdAt    DateTime  @default(now())
 }
 
 model Movie {

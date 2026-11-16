@@ -5,6 +5,7 @@ import {
   findCustomerById,
   findCustomerByEmail,
   deleteCustomer,
+  permanentlyDeleteCustomer,
   reactivateCustomer,
   updateCustomer,
   verifyCustomerCredentials,
@@ -88,7 +89,7 @@ export const loginCustomer = async (req: Request, res: Response) => {
 };
 
 export const registerCustomer = async (req: Request, res: Response) => {
-  const { name, email, password, phone, avatarUrl } = req.body ?? {};
+  const { name, email, password, phone, avatarUrl, googleId } = req.body ?? {};
   if (!email || !name) {
     res.status(400).json({ message: 'Name and email are required' });
     return;
@@ -101,6 +102,7 @@ export const registerCustomer = async (req: Request, res: Response) => {
       password: password ? String(password) : undefined,
       phone: phone ? String(phone) : undefined,
       avatarUrl: avatarUrl ? String(avatarUrl) : undefined,
+      googleId: googleId ? String(googleId) : undefined,
     });
 
     recordSecurityEvent({
@@ -190,7 +192,24 @@ export const updateCustomerById = async (req: Request, res: Response) => {
 };
 
 export const deleteCustomerById = async (req: Request, res: Response) => {
-  const deleted = await deleteCustomer(String(req.params.id));
+  const isDisableOnly = req.query.mode === 'disable';
+  if (isDisableOnly) {
+    const deleted = await deleteCustomer(String(req.params.id));
+    if (!deleted) {
+      res.status(404).json({ message: 'Customer not found' });
+      return;
+    }
+    recordSecurityEvent({
+      category: 'security',
+      tone: 'alert',
+      message: `Customer account suspended by administrator: ID ${req.params.id}`,
+      highlight: 'account suspended',
+    });
+    res.json({ success: true, message: 'Customer account disabled successfully' });
+    return;
+  }
+
+  const deleted = await permanentlyDeleteCustomer(String(req.params.id));
   if (!deleted) {
     res.status(404).json({ message: 'Customer not found' });
     return;
@@ -198,10 +217,10 @@ export const deleteCustomerById = async (req: Request, res: Response) => {
   recordSecurityEvent({
     category: 'security',
     tone: 'alert',
-    message: `Customer account suspended by administrator: ID ${req.params.id}`,
-    highlight: 'account suspended',
+    message: `Customer account deleted permanently: ID ${req.params.id}`,
+    highlight: 'account deleted',
   });
-  res.json({ success: true, message: 'Customer account disabled successfully' });
+  res.json({ success: true, message: 'Customer account deleted successfully' });
 };
 
 export const reactivateCustomerById = async (req: Request, res: Response) => {

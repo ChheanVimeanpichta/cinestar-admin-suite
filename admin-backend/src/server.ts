@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import app from './app.js';
 import { prisma } from './config/db.js';
+import { seedDefaultOffersIfEmpty } from './services/offerService.js';
+import { seedDefaultSlidesIfEmpty } from './services/slideService.js';
 
 const initialPort = Number(process.env.PORT ?? 5000);
 
@@ -8,6 +10,10 @@ async function checkDatabaseConnection() {
   try {
     await prisma.$queryRaw`SELECT 1`;
     console.log('✓ Successfully connected to AWS RDS MySQL database.');
+    await Promise.allSettled([
+      seedDefaultOffersIfEmpty(),
+      seedDefaultSlidesIfEmpty(),
+    ]);
   } catch (err: any) {
     console.warn('⚠ Database handshake notice (system will use cached/fallback data if needed):', err?.message || err);
   }

@@ -185,6 +185,10 @@ export function deleteAdminUser(id: string): Promise<{ success: boolean; message
   return apiDelete<{ success: boolean; message: string }>(`/users/${id}`);
 }
 
+export function disableCustomerUser(id: string): Promise<{ success: boolean; message: string }> {
+  return apiDelete<{ success: boolean; message: string }>(`/users/${id}?mode=disable`);
+}
+
 // Offer Management Endpoints
 export interface AdminOfferBullet {
   icon: string;

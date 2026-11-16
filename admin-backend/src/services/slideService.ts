@@ -18,7 +18,7 @@ export interface SlideItem {
 export const DEFAULT_SLIDES: SlideItem[] = [
   {
     id: 'slide-iron-verdict',
-    image: 'https://picsum.photos/seed/hero-bg1/1600/900',
+    image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1600&auto=format&fit=crop&q=80',
     title: 'IRON',
     subtitle: 'VERDICT',
     description:
@@ -32,7 +32,7 @@ export const DEFAULT_SLIDES: SlideItem[] = [
   },
   {
     id: 'slide-pixel-static',
-    image: 'https://picsum.photos/seed/hero-bg2/1600/900',
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1600&auto=format&fit=crop&q=80',
     title: 'PIXEL',
     subtitle: 'STATIC',
     description:
@@ -46,7 +46,7 @@ export const DEFAULT_SLIDES: SlideItem[] = [
   },
   {
     id: 'slide-frost-king',
-    image: 'https://picsum.photos/seed/hero-bg3/1600/900',
+    image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600&auto=format&fit=crop&q=80',
     title: 'THE FROST',
     subtitle: 'KING',
     description:
@@ -91,6 +91,32 @@ function mapDbSlide(s: any): SlideItem {
 }
 
 let inMemorySlides: SlideItem[] = [...DEFAULT_SLIDES];
+
+export const seedDefaultSlidesIfEmpty = async (): Promise<void> => {
+  try {
+    const count = await prisma.slide.count();
+    if (count === 0) {
+      for (const s of DEFAULT_SLIDES) {
+        await prisma.slide.create({
+          data: {
+            id: s.id,
+            title: s.title,
+            subtitle: s.subtitle || '',
+            description: s.description,
+            image: s.image,
+            badges: JSON.stringify(s.badges || ['NOW SHOWING']),
+            linkUrl: s.linkUrl || '/movies',
+            status: s.status || 'Active',
+            order: s.order || 0,
+          },
+        });
+      }
+      console.log('✓ Default slides seeded into DB.');
+    }
+  } catch (err: any) {
+    console.warn('[slideService] Seed check skipped or failed:', err?.message || err);
+  }
+};
 
 export const getAllSlides = async (includeInactive = false): Promise<SlideItem[]> => {
   try {
