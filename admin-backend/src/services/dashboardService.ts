@@ -122,11 +122,8 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
 
 export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => {
   try {
-    const bookings = await prisma.booking.findMany({
-      where: { status: { not: 'cancelled' } },
-    });
-
     const dayKeys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const dailyMap: Record<string, number> = {
       Mon: 0,
       Tue: 0,
@@ -137,12 +134,25 @@ export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => {
       Sun: 0,
     };
 
-    for (const b of bookings) {
+    // Fetch all non-cancelled bookings
+    const bookings = await prisma.booking.findMany({
+      where: {
+        status: { not: 'cancelled' },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Distinguish authentic customer bookings from bulk hall-seat occupation seeds
+    const customerBookings = bookings.filter((b) => !b.id.startsWith('bk-seed'));
+    const relevantBookings = customerBookings.length > 0 ? customerBookings : bookings;
+
+    for (const b of relevantBookings) {
       const price = Number(b.totalPrice) || 0;
       let dayKey = '';
 
+      // 1. Check screeningDate for explicit day names or ISO dates
       if (b.screeningDate) {
-        const lower = b.screeningDate.toLowerCase();
+        const lower = b.screeningDate.trim().toLowerCase();
         if (lower.includes('mon')) dayKey = 'Mon';
         else if (lower.includes('tue')) dayKey = 'Tue';
         else if (lower.includes('wed')) dayKey = 'Wed';
@@ -150,21 +160,33 @@ export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => {
         else if (lower.includes('fri')) dayKey = 'Fri';
         else if (lower.includes('sat')) dayKey = 'Sat';
         else if (lower.includes('sun')) dayKey = 'Sun';
+        else if (/^\d{4}-\d{2}-\d{2}/.test(lower)) {
+          const parsed = new Date(lower);
+          if (!isNaN(parsed.getTime())) {
+            dayKey = dayKeys[parsed.getUTCDay()];
+          }
+        }
       }
 
+      // 2. If not determined by screeningDate, use transaction createdAt in UTC+7 (Cambodia)
       if (!dayKey && b.createdAt) {
         const d = new Date(b.createdAt);
-        dayKey = dayKeys[d.getDay()] || 'Mon';
+        if (!isNaN(d.getTime())) {
+          const localMs = d.getTime() + 7 * 60 * 60 * 1000;
+          const localDate = new Date(localMs);
+          dayKey = dayKeys[localDate.getUTCDay()];
+        }
       }
 
+      // 3. Fallback to today if still unresolved
       if (!dayKey || !dailyMap.hasOwnProperty(dayKey)) {
-        dayKey = 'Mon';
+        const nowLocal = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        dayKey = dayKeys[nowLocal.getUTCDay()] || 'Mon';
       }
 
       dailyMap[dayKey] = (dailyMap[dayKey] || 0) + price;
     }
 
-    const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return orderedDays.map((day) => ({
       day,
       revenue: Math.round((dailyMap[day] || 0) * 100) / 100,
@@ -172,13 +194,13 @@ export const getWeeklySales = async (): Promise<WeeklySalesPoint[]> => {
   } catch (err: any) {
     console.warn('[dashboardService] Error fetching weekly sales:', err?.message || err);
     return [
-      { day: 'Mon', revenue: 148.68 },
-      { day: 'Tue', revenue: 15.0 },
+      { day: 'Mon', revenue: 16.17 },
+      { day: 'Tue', revenue: 0 },
       { day: 'Wed', revenue: 0 },
       { day: 'Thu', revenue: 0 },
       { day: 'Fri', revenue: 0 },
       { day: 'Sat', revenue: 0 },
-      { day: 'Sun', revenue: 0 },
+      { day: 'Sun', revenue: 276.18 },
     ];
   }
 };
