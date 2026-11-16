@@ -81,12 +81,6 @@ export const Login = () => {
           {submitting ? "Signing in..." : "Sign In"}
         </button>
       </form>
-
-      <div className="mt-4 p-3 rounded bg-white/5 border border-white/10 text-xs text-onSurfaceVariant">
-        <p className="font-medium text-onSurface mb-1">Default Demo Admin:</p>
-        <p>Email: <span className="font-mono text-accent">admin@gmail.com</span></p>
-        <p>Password: <span className="font-mono text-accent">cinestar123</span></p>
-      </div>
     </AuthLayout>
   );
 };
